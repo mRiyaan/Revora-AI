@@ -1,0 +1,352 @@
+================================================================================
+REVORA AI — PS 224: HOSPITALITY REVIEW REPLY DRAFTING ASSISTANT
+TEAMMATE 3 HANDOFF BRIEF: TRIPADVISOR TERRA MOCK PLATFORM
+================================================================================
+Project Name       : Revora AI
+Hospitality Brand  : Aurum Grand Hospitality
+Assigned Platform  : Tripadvisor Terra API & Reputation Mgmt Kit (Mock Sandbox)
+GitHub Repository  : https://github.com/mRiyaan/Revora-AI.git
+Your Git Branch    : feat/mock-tripadvisor
+Your Workspace Dir : apps/mock-tripadvisor/
+Local Dev Port     : 3003 (http://localhost:3003)
+Main CRM Backend   : http://localhost:4000 (Revora AI Backend + Poller)
+Main CRM Frontend  : http://localhost:3000 (Revora AI CRM Dashboard)
+================================================================================
+
+
+--------------------------------------------------------------------------------
+1. HOW TO USE THIS FILE WITH SCREENSHOTS IN ANTIGRAVITY
+--------------------------------------------------------------------------------
+Follow these exact steps inside your own Antigravity account:
+
+Step 1 — Capture Real Tripadvisor Hotel & Reviews Screenshots:
+  Open any hotel page on Tripadvisor and take 3–4 clean screenshots:
+  1) Tripadvisor Top Header + Search Bar + Hotel Title + Green Bubble Rating
+     (●●●●●) + Photo Gallery + Price/Booking Box
+  2) "About" / Property Amenities / Location & Traveler Rank Summary
+  3) Scrolled-down "Reviews" section showing emerald green bubble score
+     breakdown (Excellent, Very Good, Average, Poor, Terrible), trip-type
+     filters (Families, Couples, Solo, Business), and search reviews bar
+  4) Individual Review cards showing bold review title, body text with
+     "Read more", sub-ratings, and indented "Response from General Manager"
+     management response card
+
+Step 2 — Feed Screenshots + This File Into Antigravity:
+  Attach your 3–4 screenshots and paste/attach this entire .txt file into your
+  Antigravity chat with this instruction:
+    "Build the apps/mock-tripadvisor Next.js (TypeScript + Tailwind CSS)
+     application on port 3003 following the exact UI layout and visual polish of
+     these screenshots, while strictly implementing every API contract,
+     .env.local variable, allowlist enforcement, sandbox banner, 409 conflict /
+     moderation behavior, and live polling rule in the attached
+     Revora_AI_Tripadvisor_Terra.txt file."
+
+Step 3 — Demo Storyboard Your UI Must Support:
+  During our hackathon presentation, we will:
+  1) Open http://localhost:3003 showing an authentic Tripadvisor hotel listing
+     for Aurum Grand Hospitality with an "Allowlist Verified" badge.
+  2) Scroll down to the Reviews section -> click "Read more" on a review ->
+     filter by trip type or bubble score.
+  3) Click "Write a review" -> trigger a Safety / Privacy Complaint or 5-Bubble
+     Routine Praise preset.
+  4) Sync in Revora AI CRM (localhost:3000) -> approve the response as Manager.
+  5) Watch "Response from General Manager" appear LIVE beneath the review on
+     your Tripadvisor page (transitioning PENDING_MODERATION -> PUBLISHED via
+     3-second auto-polling)!
+
+
+--------------------------------------------------------------------------------
+2. SHARED HOSPITALITY BRAND & MULTI-PROPERTY MAPPING (MUST MATCH EXACTLY)
+--------------------------------------------------------------------------------
+Hospitality Company Name: Aurum Grand Hospitality
+All 3 mock apps and Revora AI CRM share these exact property IDs and names:
+
+  Canonical ID | Hotel Name             | Tripadvisor Location ID (YOUR PLATFORM)
+  -------------|------------------------|----------------------------------------
+  HOTEL001     | Aurum Grand Bengaluru  | 187147
+  HOTEL002     | Aurum Seaside Goa      | 188151
+  HOTEL003     | Aurum Heritage Jaipur  | 190420
+
+  (Cross-platform reference only — do not use these IDs in Tripadvisor APIs:
+   Google locations        : accounts/acc-aurum-01/locations/loc-blr-001, loc-goa-002, loc-jpr-003
+   Booking.com property_id : 800101, 800102, 800103)
+
+Allowlisted Location IDs:
+  - 187147 -> Aurum Grand Bengaluru (MG Road, Bengaluru • Traveler Ranked #4 in Bengaluru)
+  - 188151 -> Aurum Seaside Goa (Candolim Beach, Goa • Beachfront Resort)
+  - 190420 -> Aurum Heritage Jaipur (Civil Lines, Jaipur • Heritage Palace)
+
+
+--------------------------------------------------------------------------------
+3. ENVIRONMENT VARIABLES (.env.local INSIDE apps/mock-tripadvisor/)
+--------------------------------------------------------------------------------
+Create `apps/mock-tripadvisor/.env.local` (and `.env.example` if needed) with
+these exact variable names and values:
+
+```env
+PORT=3003
+NEXT_PUBLIC_PLATFORM=tripadvisor
+NEXT_PUBLIC_CRM_API_URL=http://localhost:4000
+SANDBOX_TERRA_OAUTH_TOKEN=sandbox-terra-jwt
+TERRA_ALLOWLIST_IDS=187147,188151,190420
+```
+
+Ensure `apps/mock-tripadvisor/package.json` runs Next.js on port 3003:
+  `"dev": "next dev -p 3003"`
+  `"start": "next start -p 3003"`
+
+
+--------------------------------------------------------------------------------
+4. STRICT FILE BOUNDARY & GIT WORKFLOW (ZERO MERGE CONFLICTS)
+--------------------------------------------------------------------------------
+1. Clone & checkout your isolated branch:
+     git clone https://github.com/mRiyaan/Revora-AI.git
+     cd Revora-AI
+     git checkout feat/mock-tripadvisor
+     npm install
+
+2. STRICT OWNERSHIP RULES:
+   - ONLY create/edit files inside: `apps/mock-tripadvisor/`
+   - NEVER modify: `packages/shared/`, `apps/backend/`, `apps/crm-web/`,
+     `apps/mock-google/`, `apps/mock-booking/`, or root config files.
+   - IMPORTANT: If `apps/mock-tripadvisor/src/app/api/**` is already pre-wired
+     on your branch when you pull, DO NOT change any API route path, header
+     check, status code, or JSON response shape! Focus 100% of your edits on
+     `src/app/page.tsx`, `src/app/layout.tsx`, `src/app/globals.css`, and
+     `src/components/**`.
+   - If `src/app/api/**` is not yet present (e.g., if you start building locally
+     before pulling the scaffold), implement the exact Route Handlers specified
+     in Section 5 below inside `apps/mock-tripadvisor/src/app/api/`.
+
+3. Run standalone (no Docker, Qdrant, or Gemini key needed):
+     npm run dev --workspace=apps/mock-tripadvisor
+
+4. Before raising your PR into `main`:
+     npm run build --workspace=apps/mock-tripadvisor
+     git status   # Confirm ONLY files inside apps/mock-tripadvisor/ are changed
+     git add apps/mock-tripadvisor
+     git commit -m "feat(mock-tripadvisor): implement Tripadvisor Terra mock UI"
+     git push origin feat/mock-tripadvisor
+   Then open a Pull Request from `feat/mock-tripadvisor` -> `main` on GitHub.
+
+
+--------------------------------------------------------------------------------
+5. EXACT API CONTRACT (MIMICS TRIPADVISOR TERRA API + REPUTATION MGMT KIT)
+--------------------------------------------------------------------------------
+All API routes MUST include CORS headers allowing `http://localhost:3000` and
+`http://localhost:4000` (plus `OPTIONS` preflight returning `204`):
+  Access-Control-Allow-Origin: *
+  Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
+  Access-Control-Allow-Headers: Content-Type, Authorization, x-oauth-token, accept
+
+Persistence:
+  Store reviews in a local JSON file: `apps/mock-tripadvisor/data/reviews.json`
+  Seed at least 15 realistic fictional reviews across all 3 allowlisted
+  locations (`187147`, `188151`, `190420`) covering all 6 hackathon scenarios:
+  praise, suggestions, cleanliness, billing, safety, and mixed.
+
+Authentication Rule on Terra Endpoints:
+  Check `x-oauth-token` header === `sandbox-terra-jwt`
+  (or `process.env.SANDBOX_TERRA_OAUTH_TOKEN || "sandbox-terra-jwt"`).
+  If missing or invalid on `/api/allowlist` or `/api/locations/**`, return `401`
+  with `Content-Type: application/problem+json`:
+    {
+      "type": "https://terra.tripadvisor.com/errors/unauthorized",
+      "title": "Unauthorized",
+      "status": 401,
+      "detail": "Missing or invalid x-oauth-token header."
+    }
+
+Allowlist Enforcement Rule:
+  Allowed IDs come from `process.env.TERRA_ALLOWLIST_IDS || "187147,188151,190420"`.
+  If `:id` is NOT in the allowlist, return `404 Not Found`
+  (`Content-Type: application/problem+json`):
+    {
+      "type": "https://terra.tripadvisor.com/errors/location-not-allowlisted",
+      "title": "Location Not Found or Not Allowlisted",
+      "status": 404,
+      "detail": "Location ID is not in your Terra API allowlist."
+    }
+
+NOTE: Tripadvisor Terra does NOT push webhooks. Revora AI CRM polls these
+endpoints directly.
+
+--- Endpoint 1: Get Allowlist (Mimics `GET /api/allowlist`) ---
+GET /api/allowlist
+  Response `200 OK`:
+    {
+      "data": [187147, 188151, 190420],
+      "pagination": { "size": 1000, "next_cursor": null }
+    }
+
+--- Endpoint 2: List Location Reviews (Mimics `GET /api/locations/{id}/reviews`) ---
+GET /api/locations/:id/reviews
+  Query params: `cursor` (optional)
+  Dynamic Moderation Status on Every GET:
+    - If `owner_response` has `publish_after_ms`, compute dynamically:
+      `status = Date.now() < owner_response.publish_after_ms ? "PENDING_MODERATION" : "PUBLISHED"`
+  Response `200 OK`:
+  {
+    "data": [
+      {
+        "id": 301001,
+        "location_id": 187147,
+        "title": "Lovely stay, minor housekeeping delay",
+        "text": "The pool and dining were wonderful, though extra towels took an hour to arrive.",
+        "rating": 4,
+        "published_date": "2026-11-24T11:00:00Z",
+        "trip_type": "Family",
+        "user": { "username": "PriyaM_Travels" },
+        "subratings": {
+          "cleanliness": 3,
+          "service": 5,
+          "value": 4,
+          "rooms": 4
+        },
+        "owner_response": null
+      }
+    ],
+    "pagination": { "next_cursor": null }
+  }
+
+--- Endpoint 3: Get Single Review ---
+GET /api/locations/:id/reviews/:reviewId
+  Response `200 OK`: `{ "data": { ...TerraReview } }` (or `404`).
+
+--- Endpoint 4: Submit Owner Response (Mimics `POST .../owner-responses`) ---
+POST /api/locations/:id/reviews/:reviewId/owner-responses
+  Required Headers:
+    `x-oauth-token: sandbox-terra-jwt`
+    `Content-Type: application/json`
+  Request Body:
+    {
+      "author_connection": "General Manager",
+      "language": "en",
+      "text": "Thank you for your feedback! We have shared this with our housekeeping lead."
+    }
+  Strict Terra Validation Rules (MUST IMPLEMENT):
+    1) Check location is in allowlist and review belongs to `:id` (else `404`).
+    2) Duplicate Protection (`409 Conflict`, `application/problem+json`):
+       If `review.owner_response` already exists, return `409`:
+       {
+         "type": "https://terra.tripadvisor.com/errors/conflict",
+         "title": "Owner Response Already Exists",
+         "status": 409,
+         "detail": "An owner response has already been submitted for this review. Delete it before submitting another."
+       }
+    3) Field & Moderation Validation (`400 Bad Request`, `application/problem+json`):
+       - `author_connection` required, 1–128 chars
+       - `language` required (e.g. `"en"`)
+       - `text` required, non-empty
+       - Reject URLs (`http://`, `https://`, `www.`), emails, or 10+ digit phone numbers
+       Return `400` problem+json explaining the policy/field violation.
+  Valid Behavior:
+    - Save on the review in `data/reviews.json`:
+      `owner_response: { id: "resp_" + Date.now(), author_connection, language, text, published_date: new Date().toISOString(), publish_after_ms: Date.now() + 2000, status: "PENDING_MODERATION" }`
+  Response `201 Created`:
+    {
+      "id": "resp_1732520000",
+      "author_connection": "General Manager",
+      "language": "en",
+      "text": "...",
+      "published_date": "2026-11-25T13:45:00.000Z",
+      "status": "PENDING_MODERATION"
+    }
+
+--- Endpoint 5: Get Owner Response ---
+GET /api/locations/:id/reviews/:reviewId/owner-responses
+  Response `200 OK`: `owner_response` object (or `404` if none exists).
+
+--- Endpoint 6: Delete Owner Response ---
+DELETE /api/locations/:id/reviews/:reviewId/owner-responses
+  Behavior: Sets `owner_response: null` in `data/reviews.json`.
+  Response `204 No Content`.
+
+--- Endpoint 7: UI Traveler Review Submission ---
+POST /api/ui/reviews
+  (Called by the mock website's "Write a Review" modal.)
+  Request Body:
+    {
+      "location_id": 187147,
+      "title": "Outstanding hospitality",
+      "text": "...",
+      "rating": 5,
+      "trip_type": "Couples",
+      "username": "Traveler_Riya"
+    }
+  Response `201 Created`:
+    { "data": { ...TerraReview } }
+
+
+--------------------------------------------------------------------------------
+6. UI REQUIREMENTS & DEMO FEATURES (FOR ANTIGRAVITY + SCREENSHOTS)
+--------------------------------------------------------------------------------
+1. Mandatory Persistent Sandbox Banner (Spec §7.1):
+   Fixed or top-level bright amber/red banner:
+   "SANDBOX / SIMULATION — Mock Tripadvisor Terra (Local Demo Only — Not Live Tripadvisor)"
+
+2. Property Switcher + Terra Allowlist Badge:
+   Switch between:
+   - Aurum Grand Bengaluru (`187147`)
+   - Aurum Seaside Goa (`188151`)
+   - Aurum Heritage Jaipur (`190420`)
+   Display a subtle green pill next to the location selector:
+   `"Terra Allowlist Verified (ID: 187147)"` fetched via `/api/allowlist`.
+
+3. Authentic Full Hotel Listing Page (Modeled on Your Screenshots):
+   - Tripadvisor top navbar, hotel header, emerald green (`#00AA6C`) bubble
+     rating meter (`●●●●●`), Traveler Ranking badge, photo gallery, About &
+     Amenities section.
+   - Scroll-down Reviews section:
+     * Bubble score breakdown bars (*Excellent 5*, *Very Good 4*, *Average 3*,
+       *Poor 2*, *Terrible 1*) computed dynamically from live reviews.
+     * Trip type filter chips (`All`, `Family`, `Couples`, `Business`, `Solo`)
+       and keyword search input.
+
+4. Review Cards with "Read More" & `author_connection` Management Response:
+   - Render Tripadvisor green bubbles (`1–5`), bold `title`, `text`,
+     `trip_type`, `published_date`, username, and subrating mini-pills.
+   - Truncate long review bodies (> 160 chars) with **"Read more"** /
+     **"Read less"** button so we can demonstrate expanding reviews live.
+   - Auto-poll `GET /api/locations/{id}/reviews` every **3 seconds** (with a
+     manual "Refresh" button and live sync badge).
+   - When `owner_response` exists, render the indented management box titled:
+     **"Response from {owner_response.author_connection}"** (e.g.
+     *"Response from General Manager"*), displaying `owner_response.text`,
+     `published_date`, and status pill (`PENDING_MODERATION` -> `PUBLISHED`).
+
+5. "Write a Review" Modal + 1-Click Hackathon Demo Presets:
+   - Clickable 1–5 green bubbles, Title, Review Text, Trip Type, Username.
+   - Include 2 quick-fill preset buttons for fast live demos:
+     * Preset A ("5-Bubble Routine Praise"):
+       Username: "Siddharth_Trips", Rating: 5, Trip Type: "Couples",
+       Title: "Flawless weekend at Aurum Grand",
+       Text: "Immaculate rooms, relaxing spa, and attentive concierge. Would gladly recommend to anyone visiting."
+     * Preset B ("1-Bubble Safety & Privacy Complaint"):
+       Username: "Neha_SoloTravel", Rating: 1, Trip Type: "Solo",
+       Title: "Serious room lock & privacy concern",
+       Text: "My room keycard stopped working twice and housekeeping entered without knocking even with the Do Not Disturb sign on. Felt unsafe as a solo traveler and want formal confirmation of your security escalation."
+
+
+--------------------------------------------------------------------------------
+7. CURL SMOKE TESTS (RUN BEFORE RAISING PR)
+--------------------------------------------------------------------------------
+# 1) Verify allowlist endpoint (expect [187147, 188151, 190420]):
+curl -s -H "x-oauth-token: sandbox-terra-jwt" \
+  http://localhost:3003/api/allowlist
+
+# 2) Verify un-allowlisted location returns 404:
+curl -i -H "x-oauth-token: sandbox-terra-jwt" \
+  http://localhost:3003/api/locations/999999/reviews
+
+# 3) List reviews for Aurum Grand Bengaluru (expect 200):
+curl -s -H "x-oauth-token: sandbox-terra-jwt" \
+  http://localhost:3003/api/locations/187147/reviews | head -c 500
+
+# 4) Submit owner response (expect 201; calling twice returns 409 Conflict):
+curl -s -X POST \
+  -H "x-oauth-token: sandbox-terra-jwt" \
+  -H "Content-Type: application/json" \
+  -d '{"author_connection":"General Manager","language":"en","text":"Thank you for sharing your stay experience with us."}' \
+  http://localhost:3003/api/locations/187147/reviews/301001/owner-responses
+================================================================================

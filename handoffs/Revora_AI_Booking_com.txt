@@ -1,0 +1,360 @@
+================================================================================
+REVORA AI — PS 224: HOSPITALITY REVIEW REPLY DRAFTING ASSISTANT
+TEAMMATE 2 HANDOFF BRIEF: BOOKING.COM CONNECTIVITY MOCK PLATFORM
+================================================================================
+Project Name       : Revora AI
+Hospitality Brand  : Aurum Grand Hospitality
+Assigned Platform  : Booking.com Guest Reviews (Mock Connectivity Sandbox)
+GitHub Repository  : https://github.com/mRiyaan/Revora-AI.git
+Your Git Branch    : feat/mock-booking
+Your Workspace Dir : apps/mock-booking/
+Local Dev Port     : 3002 (http://localhost:3002)
+Main CRM Backend   : http://localhost:4000 (Revora AI Backend + Poller)
+Main CRM Frontend  : http://localhost:3000 (Revora AI CRM Dashboard)
+================================================================================
+
+
+--------------------------------------------------------------------------------
+1. HOW TO USE THIS FILE WITH SCREENSHOTS IN ANTIGRAVITY
+--------------------------------------------------------------------------------
+Follow these exact steps inside your own Antigravity account:
+
+Step 1 — Capture Real Booking.com Hotel & Guest Reviews Screenshots:
+  Open any hotel listing on Booking.com and take 3–4 clean screenshots:
+  1) Deep Navy Booking.com Header (#003580) + Search Strip + Hotel Title +
+     Photo Collage + "Reserve" CTA Sidebar
+  2) Property Highlights, Facilities & Room / Location Overview
+  3) Scrolled-down "Guest reviews" section showing the signature blue score
+     box (e.g. 8.9 / "Fabulous"), category sub-score progress bars (Cleanliness,
+     Comfort, Location, Facilities, Staff, Value for money), and topic filters
+  4) Individual Guest Review cards showing traveler badge, bold headline,
+     green smiley "Liked" (positive) section, frown "Disliked" (negative)
+     section, "Read more" link, and an indented "Property response" block
+
+Step 2 — Feed Screenshots + This File Into Antigravity:
+  Attach your 3–4 screenshots and paste/attach this entire .txt file into your
+  Antigravity chat with this instruction:
+    "Build the apps/mock-booking Next.js (TypeScript + Tailwind CSS) application
+     on port 3002 following the exact UI layout and visual polish of these
+     screenshots, while strictly implementing every API contract, .env.local
+     variable, property mapping, sandbox banner, moderation status logic, and
+     live polling rule in the attached Revora_AI_Booking_com.txt file."
+
+Step 3 — Demo Storyboard Your UI Must Support:
+  During our hackathon presentation, we will:
+  1) Open http://localhost:3002 showing an authentic Booking.com hotel listing
+     for Aurum Grand Hospitality.
+  2) Scroll down to the Guest Reviews section -> click "Read more" on long
+     positive/negative review text -> inspect sub-score bars and Reservation IDs.
+  3) Click "Submit guest review" -> trigger the flagship Billing Dispute preset
+     (booked for ₹5,000 vs billed ₹6,200 with Reservation ID RES-994821).
+  4) Switch to Revora AI CRM (localhost:3000) -> click "Sync Platforms" (Booking
+     Connectivity uses polling, no webhooks) -> show AI escalation + Qdrant SOP
+     retrieval + RBAC approval.
+  5) Watch the approved "Property response" appear LIVE on your Booking.com page
+     transitioning from "Pending Moderation" -> "Published" via 3-second polling!
+
+
+--------------------------------------------------------------------------------
+2. SHARED HOSPITALITY BRAND & MULTI-PROPERTY MAPPING (MUST MATCH EXACTLY)
+--------------------------------------------------------------------------------
+Hospitality Company Name: Aurum Grand Hospitality
+All 3 mock apps and Revora AI CRM share these exact property IDs and names:
+
+  Canonical ID | Hotel Name             | Booking.com property_id (YOUR PLATFORM)
+  -------------|------------------------|----------------------------------------
+  HOTEL001     | Aurum Grand Bengaluru  | 800101
+  HOTEL002     | Aurum Seaside Goa      | 800102
+  HOTEL003     | Aurum Heritage Jaipur  | 800103
+
+  (Cross-platform reference only — do not use these IDs in Booking.com APIs:
+   Google locations        : accounts/acc-aurum-01/locations/loc-blr-001, loc-goa-002, loc-jpr-003
+   Tripadvisor locationIds : 187147, 188151, 190420)
+
+Property Details:
+  - 800101 -> Aurum Grand Bengaluru (MG Road, Bengaluru • Business & Luxury Stay)
+  - 800102 -> Aurum Seaside Goa (Candolim Beach, Goa • Beachfront Resort)
+  - 800103 -> Aurum Heritage Jaipur (Civil Lines, Jaipur • Heritage Palace)
+
+
+--------------------------------------------------------------------------------
+3. ENVIRONMENT VARIABLES (.env.local INSIDE apps/mock-booking/)
+--------------------------------------------------------------------------------
+Create `apps/mock-booking/.env.local` (and `.env.example` if needed) with these
+exact variable names and values:
+
+```env
+PORT=3002
+NEXT_PUBLIC_PLATFORM=booking
+NEXT_PUBLIC_CRM_API_URL=http://localhost:4000
+SANDBOX_BOOKING_TOKEN=sandbox-booking-jwt
+```
+
+Ensure `apps/mock-booking/package.json` runs Next.js on port 3002:
+  `"dev": "next dev -p 3002"`
+  `"start": "next start -p 3002"`
+
+
+--------------------------------------------------------------------------------
+4. STRICT FILE BOUNDARY & GIT WORKFLOW (ZERO MERGE CONFLICTS)
+--------------------------------------------------------------------------------
+1. Clone & checkout your isolated branch:
+     git clone https://github.com/mRiyaan/Revora-AI.git
+     cd Revora-AI
+     git checkout feat/mock-booking
+     npm install
+
+2. STRICT OWNERSHIP RULES:
+   - ONLY create/edit files inside: `apps/mock-booking/`
+   - NEVER modify: `packages/shared/`, `apps/backend/`, `apps/crm-web/`,
+     `apps/mock-google/`, `apps/mock-tripadvisor/`, or root config files.
+   - IMPORTANT: If `apps/mock-booking/src/app/api/**` is already pre-wired on
+     your branch when you pull, DO NOT change any API route path, header check,
+     status code, or JSON response shape! Focus 100% of your edits on
+     `src/app/page.tsx`, `src/app/layout.tsx`, `src/app/globals.css`, and
+     `src/components/**`.
+   - If `src/app/api/**` is not yet present (e.g., if you start building locally
+     before pulling the scaffold), implement the exact Route Handlers specified
+     in Section 5 below inside `apps/mock-booking/src/app/api/`.
+
+3. Run standalone (no Docker, Qdrant, or Gemini key needed):
+     npm run dev --workspace=apps/mock-booking
+
+4. Before raising your PR into `main`:
+     npm run build --workspace=apps/mock-booking
+     git status   # Confirm ONLY files inside apps/mock-booking/ are changed
+     git add apps/mock-booking
+     git commit -m "feat(mock-booking): implement Booking.com Guest Reviews mock UI"
+     git push origin feat/mock-booking
+   Then open a Pull Request from `feat/mock-booking` -> `main` on GitHub.
+
+
+--------------------------------------------------------------------------------
+5. EXACT API CONTRACT (MIMICS BOOKING.COM CONNECTIVITY GUEST REVIEW API)
+--------------------------------------------------------------------------------
+All API routes MUST include CORS headers allowing `http://localhost:3000` and
+`http://localhost:4000` (plus `OPTIONS` preflight returning `204`):
+  Access-Control-Allow-Origin: *
+  Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
+  Access-Control-Allow-Headers: Content-Type, Authorization
+
+Persistence:
+  Store reviews in a local JSON file: `apps/mock-booking/data/reviews.json`
+  Seed at least 15 realistic fictional reviews across all 3 properties
+  (`800101`, `800102`, `800103`) covering all 6 hackathon scenarios: praise,
+  suggestions, cleanliness, billing, safety, and mixed.
+
+Authentication Rule on `/api/review-api/**`:
+  Check `Authorization` header === `Bearer sandbox-booking-jwt`
+  (or `process.env.SANDBOX_BOOKING_TOKEN || "sandbox-booking-jwt"`).
+  If missing or invalid, return HTTP `401` JSON:
+    {
+      "errors": [{ "code": "UNAUTHORIZED", "message": "Invalid or missing machine account JWT" }],
+      "warnings": [],
+      "meta": { "ruid": "sandbox-ruid-401" }
+    }
+
+NOTE: Booking.com Connectivity does NOT provide push webhooks. Revora AI CRM
+polls these endpoints directly.
+
+--- Endpoint 1: Retrieve Reviews ---
+GET /api/review-api/properties/:property_id/reviews
+  Query params:
+    - from_date (optional, YYYY-MM-DD)
+    - limit (optional, default 50)
+    - cursor (optional)
+  Validation:
+    - Return 404 if property_id not in ["800101", "800102", "800103"].
+  Dynamic Moderation Status Computation on Every GET:
+    - If a review has a `reply` with `publish_after_ms`, compute dynamically:
+      `status = Date.now() < reply.publish_after_ms ? "PENDING_MODERATION" : "PUBLISHED"`
+  Response `200 OK`:
+  {
+    "errors": [],
+    "warnings": [],
+    "meta": {
+      "ruid": "sandbox-ruid-001",
+      "next_page": null
+    },
+    "data": {
+      "reviews": [
+        {
+          "review_id": "bk_rev_201",
+          "property_id": "800101",
+          "reservation_id": "RES-994821",
+          "reviewer_name": "Karan Mehta",
+          "created_timestamp": "2026-11-24 14:10:00",
+          "last_change_timestamp": "2026-11-24 14:10:00",
+          "review_score": 4.0,
+          "content": {
+            "language_code": "en",
+            "headline": "Overcharged at checkout",
+            "positive": "Great breakfast and central location.",
+            "negative": "Booked for ₹5,000 but billed ₹6,200 at checkout with unexplained charges."
+          },
+          "scores": {
+            "cleanliness": 8.0,
+            "comfort": 7.0,
+            "location": 9.0,
+            "facilities": 7.0,
+            "staff": 5.0,
+            "value_for_money": 2.0
+          },
+          "traveler_type": "Business",
+          "reply": null
+        }
+      ]
+    }
+  }
+  NOTE: `review_score` is on Booking.com's 10-point scale (`1.0` to `10.0`)!
+
+--- Endpoint 2: Retrieve Single Review ---
+GET /api/review-api/properties/:property_id/reviews/:review_id
+  Response `200 OK`:
+    { "errors": [], "warnings": [], "meta": { "ruid": "..." }, "data": { "review": { ... } } }
+
+--- Endpoint 3: Post Property Reply (With Booking.com Moderation Pipeline) ---
+POST /api/review-api/properties/:property_id/reviews/:review_id/replies
+  Request Body:
+    {
+      "text": "Thank you for sharing your feedback...",
+      "language_code": "en"
+    }
+  Validation & Moderation Rules (MUST IMPLEMENT):
+    1) Check `text` is 1–2000 characters.
+    2) Reject external URLs (`http://`, `https://`, `www.`), email addresses,
+       or 10+ digit phone numbers (Booking.com content policy blocks off-platform
+       contact info / links) with `400 Bad Request`:
+       {
+         "errors": [{
+           "code": "MODERATION_REJECTED",
+           "message": "External URLs, email addresses, or phone numbers are not permitted in Booking.com replies."
+         }],
+         "warnings": [],
+         "meta": { "ruid": "sandbox-ruid-400" }
+       }
+  Valid Behavior:
+    - Store on the review in `data/reviews.json`:
+      `reply: { reply_id: "rep_" + Date.now(), created_timestamp, text, language_code: language_code || "en", publish_after_ms: Date.now() + 2000, status: "PENDING_MODERATION" }`
+  Response `201 Created`:
+    {
+      "errors": [],
+      "warnings": [],
+      "meta": { "ruid": "sandbox-ruid-201" },
+      "data": {
+        "success": true,
+        "reply_id": "rep_1732520000",
+        "status": "PENDING_MODERATION",
+        "last_change_timestamp": "2026-11-25 13:45:00"
+      }
+    }
+
+--- Endpoint 4: Check Reply Moderation Status ---
+GET /api/review-api/properties/:property_id/reviews/:review_id/replies/:reply_id
+  Response `200 OK`:
+    {
+      "errors": [],
+      "warnings": [],
+      "meta": { "ruid": "sandbox-ruid-status" },
+      "data": {
+        "reply_id": "...",
+        "status": "PENDING_MODERATION" | "PUBLISHED",
+        "text": "...",
+        "created_timestamp": "..."
+      }
+    }
+
+--- Endpoint 5: UI Guest Review Submission ---
+POST /api/ui/reviews
+  (Called by the mock website's "Submit Guest Review" modal.)
+  Request Body:
+    {
+      "property_id": "800101",
+      "reviewer_name": "Sneha Nair",
+      "review_score": 9.5,
+      "headline": "Superb stay!",
+      "positive": "Spotless rooms and courteous staff.",
+      "negative": "",
+      "traveler_type": "Couple",
+      "reservation_id": "RES-995102"  // optional; auto-generate if omitted
+    }
+  Response `201 Created`:
+    { "review": { ...BookingReview } }
+
+
+--------------------------------------------------------------------------------
+6. UI REQUIREMENTS & DEMO FEATURES (FOR ANTIGRAVITY + SCREENSHOTS)
+--------------------------------------------------------------------------------
+1. Mandatory Persistent Sandbox Banner (Spec §7.1):
+   Fixed or top-level bright amber/red banner:
+   "SANDBOX / SIMULATION — Mock Booking.com Guest Reviews (Local Demo Only — Not Live Booking.com)"
+
+2. Property Switcher Header:
+   Deep navy Booking.com header (`#003580`) with property switcher for:
+   - Aurum Grand Bengaluru (`800101`)
+   - Aurum Seaside Goa (`800102`)
+   - Aurum Heritage Jaipur (`800103`)
+
+3. Authentic Full Hotel Listing Page (Modeled on Your Screenshots):
+   - Booking.com navbar, search summary bar, hotel photo collage, amenities icons,
+     property highlights, and "Reserve" card.
+   - Scroll-down Guest Reviews section:
+     * Signature blue score badge (e.g. `8.6` / `10` with word label:
+       9+ "Superb", 8+ "Fabulous", 7+ "Good", <6 "Review score").
+     * 6 horizontal category sub-score bars (`Cleanliness`, `Comfort`,
+       `Location`, `Facilities`, `Staff`, `Value for money`) computed dynamically.
+     * Traveler-type filter pills (`All`, `Business`, `Couple`, `Family`, `Solo`).
+
+4. Review Cards with Positive/Negative Split, "Read More", Reservation ID & Moderation Pill:
+   - Show Reviewer Name, Traveler Type, Stay Date, and **`Reservation ID` pill**
+     (e.g. `RES-994821` — critical for our billing dispute verification demo!).
+   - Show bold `headline`, green `+` icon `positive` text, and muted `-` icon
+     `negative` text.
+   - Add **"Read more"** / **"Show less"** expanders on long reviews so during
+     the demo we scroll down, click "Read more", and read the full incident.
+   - Auto-poll `GET /api/review-api/properties/{property_id}/reviews` every
+     **3 seconds** (with a manual "Refresh" button and live sync badge).
+   - When `reply` exists, show indented **"Property response"** box with a subtle
+     status pill: `PENDING_MODERATION` (amber, ~2s) -> `PUBLISHED` (green).
+
+5. "Submit Guest Review" Modal + 1-Click Hackathon Demo Presets:
+   - Score slider (`1.0` to `10.0`), Headline, Positive, Negative, Traveler Type,
+     Reviewer Name, Reservation ID.
+   - Include 2 quick-fill preset buttons for the live presentation:
+     * Preset A ("9.5/10 Routine Praise"):
+       Name: "Meera Krishnan", Score: 9.5, Traveler: "Couple",
+       Headline: "Memorable weekend getaway",
+       Positive: "Warm welcome, quiet rooms, and delicious breakfast buffet.",
+       Negative: "Nothing at all."
+     * Preset B ("3.0/10 Billing Dispute — ₹5,000 vs ₹6,200"):
+       Name: "Arjun Deshmukh", Score: 3.0, Traveler: "Business",
+       Reservation ID: "RES-994821",
+       Headline: "Billed ₹6,200 instead of confirmed ₹5,000 rate",
+       Positive: "Room was clean and Wi-Fi worked well.",
+       Negative: "My confirmed booking was ₹5,000 total, yet ₹6,200 was charged at checkout with no itemized explanation. Please refund the ₹1,200 overcharge immediately."
+
+
+--------------------------------------------------------------------------------
+7. CURL SMOKE TESTS (RUN BEFORE RAISING PR)
+--------------------------------------------------------------------------------
+# 1) Verify auth enforcement (expect 401):
+curl -i http://localhost:3002/api/review-api/properties/800101/reviews
+
+# 2) List reviews with Booking machine JWT (expect 200):
+curl -s -H "Authorization: Bearer sandbox-booking-jwt" \
+  http://localhost:3002/api/review-api/properties/800101/reviews | head -c 500
+
+# 3) Verify moderation rejects external URLs (expect 400 MODERATION_REJECTED):
+curl -i -X POST \
+  -H "Authorization: Bearer sandbox-booking-jwt" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Contact us at https://spam.example.com","language_code":"en"}' \
+  http://localhost:3002/api/review-api/properties/800101/reviews/bk_rev_201/replies
+
+# 4) Post valid reply (expect 201 PENDING_MODERATION -> transitions to PUBLISHED after 2s):
+curl -s -X POST \
+  -H "Authorization: Bearer sandbox-booking-jwt" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Thank you for your feedback. Our billing team is reviewing reservation RES-994821.","language_code":"en"}' \
+  http://localhost:3002/api/review-api/properties/800101/reviews/bk_rev_201/replies
+================================================================================

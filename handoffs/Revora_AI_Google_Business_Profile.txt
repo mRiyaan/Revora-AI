@@ -1,0 +1,327 @@
+================================================================================
+REVORA AI — PS 224: HOSPITALITY REVIEW REPLY DRAFTING ASSISTANT
+TEAMMATE 1 HANDOFF BRIEF: GOOGLE BUSINESS PROFILE MOCK PLATFORM
+================================================================================
+Project Name       : Revora AI
+Hospitality Brand  : Aurum Grand Hospitality
+Assigned Platform  : Google Business Profile / Google Maps Reviews (Mock Sandbox)
+GitHub Repository  : https://github.com/mRiyaan/Revora-AI.git
+Your Git Branch    : feat/mock-google
+Your Workspace Dir : apps/mock-google/
+Local Dev Port     : 3001 (http://localhost:3001)
+Main CRM Backend   : http://localhost:4000 (Revora AI Backend + Webhook Receiver)
+Main CRM Frontend  : http://localhost:3000 (Revora AI CRM Dashboard)
+================================================================================
+
+
+--------------------------------------------------------------------------------
+1. HOW TO USE THIS FILE WITH SCREENSHOTS IN ANTIGRAVITY
+--------------------------------------------------------------------------------
+Follow these exact steps inside your own Antigravity account:
+
+Step 1 — Capture Real Google Maps / Google Business Profile Hotel Screenshots:
+  Open Google Maps (or Google Search hotel listing) for any real luxury hotel
+  and take 3–4 clean screenshots:
+  1) Hero / Top Search Bar + Hotel Header + Photo Gallery + Overview Tabs
+  2) Hotel Overview, Amenities, Location & Quick Info Panel
+  3) Scrolled-down "Reviews" section showing overall star score, 5-to-1 rating
+     histogram bars, sort chips ("Most relevant", "Newest", "Highest", "Lowest"),
+     and topic filter pills
+  4) Individual Review cards showing truncated text with "More" / "Read more",
+     star rating, date, and an indented "Response from the owner" card
+
+Step 2 — Feed Screenshots + This File Into Antigravity:
+  Attach your 3–4 screenshots and paste/attach this entire .txt file into your
+  Antigravity chat with this instruction:
+    "Build the apps/mock-google Next.js (TypeScript + Tailwind CSS) application
+     on port 3001 following the exact UI layout and visual polish of these
+     screenshots, while strictly implementing every API contract, .env.local
+     variable, property mapping, sandbox banner, and live polling/webhook rule
+     in the attached Revora_AI_Google_Business_Profile.txt file."
+
+Step 3 — Demo Storyboard Your UI Must Support:
+  During our hackathon presentation, we will:
+  1) Open http://localhost:3001 showing a full, authentic-looking Google Hotel /
+     Maps listing for Aurum Grand Hospitality.
+  2) Scroll down to the Guest Reviews section -> click "Read more" / "More" on
+     reviews to expand full guest feedback -> open "All reviews" or filter/sort.
+  3) Click "Write a review" -> submit a new review (or use a 1-click Demo Preset).
+  4) Show the review persisting immediately AND firing a real-format Google Cloud
+     Pub/Sub NEW_REVIEW Base64 webhook to Revora AI CRM (localhost:4000).
+  5) Watch the CRM-generated "Response from the owner" appear LIVE underneath
+     that review on your webpage via 3-second auto-polling (zero page reload).
+
+
+--------------------------------------------------------------------------------
+2. SHARED HOSPITALITY BRAND & MULTI-PROPERTY MAPPING (MUST MATCH EXACTLY)
+--------------------------------------------------------------------------------
+Hospitality Company Name: Aurum Grand Hospitality
+All 3 mock apps and Revora AI CRM share these exact property IDs and names:
+
+  Canonical ID | Hotel Name             | Google Location Path (YOUR PLATFORM)
+  -------------|------------------------|----------------------------------------------
+  HOTEL001     | Aurum Grand Bengaluru  | accounts/acc-aurum-01/locations/loc-blr-001
+  HOTEL002     | Aurum Seaside Goa      | accounts/acc-aurum-01/locations/loc-goa-002
+  HOTEL003     | Aurum Heritage Jaipur  | accounts/acc-aurum-01/locations/loc-jpr-003
+
+  (Cross-platform reference only — do not use these IDs in Google APIs:
+   Booking.com property_ids: 800101, 800102, 800103
+   Tripadvisor locationIds : 187147, 188151, 190420)
+
+Account ID: acc-aurum-01
+Location IDs:
+  - loc-blr-001 -> Aurum Grand Bengaluru (MG Road, Bengaluru • 5-star Urban Business Hotel)
+  - loc-goa-002 -> Aurum Seaside Goa (Candolim Beach, Goa • 5-star Coastal Resort)
+  - loc-jpr-003 -> Aurum Heritage Jaipur (Civil Lines, Jaipur • Heritage Palace Hotel)
+
+
+--------------------------------------------------------------------------------
+3. ENVIRONMENT VARIABLES (.env.local INSIDE apps/mock-google/)
+--------------------------------------------------------------------------------
+Create `apps/mock-google/.env.local` (and `.env.example` without secrets if needed)
+with these exact variable names and values:
+
+```env
+PORT=3001
+NEXT_PUBLIC_PLATFORM=google
+NEXT_PUBLIC_ACCOUNT_ID=acc-aurum-01
+NEXT_PUBLIC_CRM_API_URL=http://localhost:4000
+CRM_WEBHOOK_URL=http://localhost:4000/api/webhooks/google
+SANDBOX_GBP_TOKEN=sandbox-gbp-token
+SANDBOX_WEBHOOK_SECRET=sandbox-gbp-webhook-secret
+```
+
+Ensure `apps/mock-google/package.json` runs Next.js on port 3001:
+  `"dev": "next dev -p 3001"`
+  `"start": "next start -p 3001"`
+
+
+--------------------------------------------------------------------------------
+4. STRICT FILE BOUNDARY & GIT WORKFLOW (ZERO MERGE CONFLICTS)
+--------------------------------------------------------------------------------
+1. Clone & checkout your isolated branch:
+     git clone https://github.com/mRiyaan/Revora-AI.git
+     cd Revora-AI
+     git checkout feat/mock-google
+     npm install
+
+2. STRICT OWNERSHIP RULES:
+   - ONLY create/edit files inside: `apps/mock-google/`
+   - NEVER modify: `packages/shared/`, `apps/backend/`, `apps/crm-web/`,
+     `apps/mock-booking/`, `apps/mock-tripadvisor/`, or root config files.
+   - IMPORTANT: If `apps/mock-google/src/app/api/**` is already pre-wired on
+     your branch when you pull, DO NOT change any API route path, header check,
+     status code, or JSON response shape! Focus 100% of your edits on
+     `src/app/page.tsx`, `src/app/layout.tsx`, `src/app/globals.css`, and
+     `src/components/**`.
+   - If `src/app/api/**` is not yet present (e.g., if you start building locally
+     before pulling the scaffold), implement the exact Route Handlers specified
+     in Section 5 below inside `apps/mock-google/src/app/api/`.
+
+3. Run standalone (no Docker, Qdrant, or Gemini key needed):
+     npm run dev --workspace=apps/mock-google
+
+4. Before raising your PR into `main`:
+     npm run build --workspace=apps/mock-google
+     git status   # Confirm ONLY files inside apps/mock-google/ are changed
+     git add apps/mock-google
+     git commit -m "feat(mock-google): implement Google Business Profile mock UI"
+     git push origin feat/mock-google
+   Then open a Pull Request from `feat/mock-google` -> `main` on GitHub.
+
+
+--------------------------------------------------------------------------------
+5. EXACT API CONTRACT (MIMICS GOOGLE BUSINESS PROFILE API v4 + CLOUD PUB/SUB)
+--------------------------------------------------------------------------------
+All API routes MUST include CORS headers allowing `http://localhost:3000` and
+`http://localhost:4000` (plus `OPTIONS` preflight returning `204`):
+  Access-Control-Allow-Origin: *
+  Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
+  Access-Control-Allow-Headers: Content-Type, Authorization, X-Sandbox-Webhook-Secret
+
+Persistence:
+  Store reviews in a local JSON file: `apps/mock-google/data/reviews.json`
+  Seed at least 15 realistic fictional reviews across all 3 locations
+  (`loc-blr-001`, `loc-goa-002`, `loc-jpr-003`) covering all 6 hackathon
+  scenarios: praise, suggestions, cleanliness, billing, safety, and mixed.
+
+Authentication Rule on `/api/v4/**`:
+  Check `Authorization` header === `Bearer sandbox-gbp-token`
+  (or `process.env.SANDBOX_GBP_TOKEN || "sandbox-gbp-token"`).
+  If missing or invalid, return HTTP `401` JSON:
+    { "error": { "code": 401, "message": "Invalid or missing OAuth2 bearer token", "status": "UNAUTHENTICATED" } }
+
+--- Endpoint 1: List Reviews (Mimics `accounts.locations.reviews.list`) ---
+GET /api/v4/accounts/:accountId/locations/:locationId/reviews
+  Query params:
+    - pageSize (optional, default 20, max 50)
+    - pageToken (optional, numeric string offset)
+    - orderBy (optional: "updateTime desc" | "rating desc" | "rating asc")
+  Validation:
+    - Return 404 if accountId !== "acc-aurum-01" or locationId not in
+      ["loc-blr-001", "loc-goa-002", "loc-jpr-003"].
+  Response `200 OK`:
+  {
+    "reviews": [
+      {
+        "reviewId": "gbp_rev_101",
+        "locationId": "loc-blr-001",
+        "reviewer": {
+          "profilePhotoUrl": "",
+          "displayName": "Aarav Sharma",
+          "isAnonymous": false
+        },
+        "starRating": "FIVE",
+        "comment": "Seamless check-in and spotless rooms! The breakfast buffet at Aurum Grand Bengaluru was outstanding.",
+        "createTime": "2026-11-24T09:30:00Z",
+        "updateTime": "2026-11-24T09:30:00Z",
+        "reviewReply": null
+      }
+    ],
+    "averageRating": 4.2,
+    "totalReviewCount": 6,
+    "nextPageToken": null
+  }
+  NOTE: `starRating` MUST be the exact Google v4 string enum:
+        "ONE" | "TWO" | "THREE" | "FOUR" | "FIVE" (never a raw number!).
+
+--- Endpoint 2: Get Single Review (Used by Revora CRM after Pub/Sub push) ---
+GET /api/v4/accounts/:accountId/locations/:locationId/reviews/:reviewId
+  Response `200 OK`: Single `GbpReview` object matching schema above (or `404`).
+
+--- Endpoint 3: Create / Update Reply (Mimics `accounts.locations.reviews.updateReply`) ---
+PUT /api/v4/accounts/:accountId/locations/:locationId/reviews/:reviewId/reply
+  Request Body:
+    { "comment": "Thank you for your feedback! We are glad you enjoyed your stay." }
+  Validation:
+    - Return 400 if `comment` is missing, empty, or exceeds 4096 characters.
+    - Return 404 if review not found.
+  Behavior:
+    - Save `reviewReply: { comment, updateTime: new Date().toISOString() }` onto
+      the review in `data/reviews.json` and update `review.updateTime`.
+  Response `200 OK`:
+    {
+      "comment": "Thank you for your feedback! We are glad you enjoyed your stay.",
+      "updateTime": "2026-11-25T13:45:00.000Z"
+    }
+
+--- Endpoint 4: Delete Reply (Mimics `accounts.locations.reviews.deleteReply`) ---
+DELETE /api/v4/accounts/:accountId/locations/:locationId/reviews/:reviewId/reply
+  Behavior: Sets `reviewReply: null` in `data/reviews.json`.
+  Response `200 OK`: `{}`
+
+--- Endpoint 5: UI Review Submission + Cloud Pub/Sub Push Webhook ---
+POST /api/ui/reviews
+  (Called by the mock website's "Write a Review" modal; no bearer token needed
+   from browser UI, or you may include same-origin request).
+  Request Body:
+    {
+      "locationId": "loc-blr-001",
+      "displayName": "Rohan Verma",
+      "starRating": "FIVE",
+      "comment": "..."
+    }
+  Behavior:
+    1) Generate `reviewId` (e.g., `gbp_rev_${Date.now()}`), timestamps, and save
+       to `data/reviews.json`.
+    2) Construct the exact Google Cloud Pub/Sub `NEW_REVIEW` push envelope:
+       Inner JSON before Base64:
+         {
+           "type": "NEW_REVIEW",
+           "location": "accounts/acc-aurum-01/locations/" + locationId,
+           "review": "accounts/acc-aurum-01/locations/" + locationId + "/reviews/" + reviewId
+         }
+       Outer HTTP POST body to `process.env.CRM_WEBHOOK_URL || "http://localhost:4000/api/webhooks/google"`:
+         {
+           "message": {
+             "data": "<Buffer.from(JSON.stringify(inner)).toString('base64')>",
+             "attributes": { "accountId": "acc-aurum-01" },
+             "messageId": "msg-" + Date.now()
+           },
+           "subscription": "projects/revora-sandbox/subscriptions/gbp-reviews-push"
+         }
+       Headers:
+         Content-Type: application/json
+         X-Sandbox-Webhook-Secret: process.env.SANDBOX_WEBHOOK_SECRET || "sandbox-gbp-webhook-secret"
+    3) Fire the webhook with a 3-second `AbortSignal.timeout(3000)` inside try/catch.
+       If `:4000` is offline (standalone teammate dev), catch gracefully and set
+       `webhookDelivered: false` — NEVER fail saving the review!
+  Response `201 Created`:
+    {
+      "review": { ...GbpReview },
+      "webhookDelivered": true | false
+    }
+
+
+--------------------------------------------------------------------------------
+6. UI REQUIREMENTS & DEMO FEATURES (FOR ANTIGRAVITY + SCREENSHOTS)
+--------------------------------------------------------------------------------
+1. Mandatory Persistent Sandbox Banner (Spec §7.1):
+   Fixed or top-level bright amber/red banner:
+   "SANDBOX / SIMULATION — Mock Google Business Profile (Local Demo Only — Not Live Google)"
+
+2. Property Switcher Header:
+   Clean dropdown or pill bar to switch between:
+   - Aurum Grand Bengaluru (`loc-blr-001`)
+   - Aurum Seaside Goa (`loc-goa-002`)
+   - Aurum Heritage Jaipur (`loc-jpr-003`)
+   Switching properties updates the hotel name, address, photos/hero metadata,
+   star rating summary, histogram, and reviews list.
+
+3. Authentic Full Hotel Listing Page (Modeled on Your Screenshots):
+   - Google Search / Maps style top bar + hotel title, category ("5-star hotel"),
+     address, verified badge, photo grid, Overview / Prices / Reviews / About tabs.
+   - Smooth scroll-to-Reviews section (clicking the rating or "Reviews" tab
+     scrolls directly down to the live Reviews section).
+   - Overall rating number (e.g. 4.3), 5-star icons, total review count, and
+     5-to-1 horizontal rating histogram bars computed dynamically from live data.
+   - Sort controls ("Newest", "Highest rating", "Lowest rating") & keyword search.
+
+4. "Read More" & Live Owner Reply Display:
+   - Long reviews (> 160 chars) truncate cleanly with an interactive **"More"** /
+     **"Read more"** toggle button so during the demo we can scroll down and
+     click "Read more" to reveal full review details.
+   - Auto-poll `GET /api/v4/accounts/acc-aurum-01/locations/{locationId}/reviews`
+     every **3 seconds** (with a subtle "Live sync active" indicator + manual
+     "Refresh" button).
+   - Whenever `reviewReply` is non-null, immediately render the indented Google
+     style **"Response from the owner"** box below the review showing
+     `reviewReply.comment` and formatted `reviewReply.updateTime`.
+
+5. "Write a Review" Modal + 1-Click Hackathon Demo Presets:
+   - Button: "Write a review" -> opens Google-style modal with Name, clickable
+     1–5 Stars, and Review Text.
+   - Include 2 quick-fill preset buttons inside the modal for fast live demos:
+     * Preset A ("5★ Routine Praise"):
+       Name: "Ananya Kapoor", Rating: FIVE,
+       Comment: "Wonderful stay at Aurum Grand! Quick check-in, spotless room, and super polite front desk staff. Will definitely come back."
+     * Preset B ("1★ Billing Dispute — ₹5,000 vs ₹6,200"):
+       Name: "Vikram Malhotra", Rating: ONE,
+       Comment: "Booked my room for ₹5,000 per night inclusive of taxes, but at checkout I was billed ₹6,200 with unexplained extra charges. Staff could not explain the ₹1,200 difference. Requesting an immediate refund."
+   - After submitting, show a toast badge:
+     "Review posted • Cloud Pub/Sub NEW_REVIEW webhook delivered to Revora CRM"
+     (or "Review saved locally (CRM offline)" when testing standalone).
+
+
+--------------------------------------------------------------------------------
+7. CURL SMOKE TESTS (RUN BEFORE RAISING PR)
+--------------------------------------------------------------------------------
+# 1) Verify auth enforcement (expect 401):
+curl -i http://localhost:3001/api/v4/accounts/acc-aurum-01/locations/loc-blr-001/reviews
+
+# 2) List reviews with sandbox token (expect 200 + reviews array):
+curl -s -H "Authorization: Bearer sandbox-gbp-token" \
+  http://localhost:3001/api/v4/accounts/acc-aurum-01/locations/loc-blr-001/reviews | head -c 500
+
+# 3) Submit a new review via UI route (expect 201):
+curl -s -X POST http://localhost:3001/api/ui/reviews \
+  -H "Content-Type: application/json" \
+  -d '{"locationId":"loc-blr-001","displayName":"Test Guest","starRating":"FIVE","comment":"Great hospitality!"}'
+
+# 4) Simulate Revora CRM publishing an owner reply (replace REVIEW_ID):
+curl -s -X PUT \
+  -H "Authorization: Bearer sandbox-gbp-token" \
+  -H "Content-Type: application/json" \
+  -d '{"comment":"Thank you for staying with Aurum Grand Bengaluru!"}' \
+  http://localhost:3001/api/v4/accounts/acc-aurum-01/locations/loc-blr-001/reviews/REVIEW_ID/reply
+================================================================================

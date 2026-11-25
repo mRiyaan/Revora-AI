@@ -1,0 +1,9 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: revora-qdrant
+    ports:
+      - "6333:6333"
+    volumes:
+      - ./storage/qdrant:/qdrant/storage
+    restart: unless-stopped

@@ -1,0 +1,25 @@
+{
+  "name": "revora-ai-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev --workspace=apps/backend",
+    "dev:worker": "npm run worker --workspace=apps/backend",
+    "dev:crm": "npm run dev --workspace=apps/crm-web",
+    "dev:core": "concurrently -n API,WORKER,CRM -c cyan,magenta,green \"npm run dev:backend\" \"npm run dev:worker\" \"npm run dev:crm\"",
+    "seed": "npm run seed --workspace=apps/backend",
+    "worker:once": "npm run worker:once --workspace=apps/backend",
+    "build": "npm run build --workspace=packages/shared && npm run build --workspace=apps/backend && npm run build --workspace=apps/crm-web"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "typescript": "^5.7.3"
+  },
+  "browserslist": [
+    "defaults"
+  ]
+}
