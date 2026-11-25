@@ -1,0 +1,169 @@
+[
+  {
+    "canonicalId": "HOTEL001",
+    "locationId": "loc-blr-001",
+    "name": "Aurum Grand Bengaluru",
+    "fullName": "Aurum Grand Bengaluru - Garden City's Only Modern Palace Hotel",
+    "category": "5-star hotel",
+    "address": "23, MG Road, Bengaluru, Karnataka 560001",
+    "breadcrumbs": ["Karnataka", "Bangalore Division", "Bengaluru", "Kodihalli", "Aurum Grand Bengaluru - Garden City's Only Modern Palace Hotel"],
+    "city": "Bengaluru",
+    "searchTag": "5 star bangalore",
+    "pricePerNight": 48060,
+    "priceDisplay": "₹48,060",
+    "dates": "25 – 26 Nov",
+    "amenities": ["Free Wi-Fi", "Free breakfast", "Outdoor pool", "Air conditioning", "Spa", "Fitness centre"],
+    "competitors": [
+      {
+        "name": "Four Seasons Hotel Bengaluru at Embassy ONE",
+        "price": "₹39,927",
+        "rating": 4.6,
+        "reviews": "8.1K",
+        "badge": "5-star hotel · Breakfast ($)",
+        "image": "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=300&q=80"
+      },
+      {
+        "name": "The Oterra Hotel",
+        "price": "₹16,500",
+        "rating": 4.4,
+        "reviews": "6.8K",
+        "badge": "5-star hotel · Free breakfast",
+        "image": "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=300&q=80"
+      },
+      {
+        "name": "ITC Gardenia, a Luxury Collection Hotel, Bengaluru",
+        "price": "₹28,025",
+        "rating": 4.6,
+        "reviews": "26.1K",
+        "badge": "5-star hotel · Free breakfast",
+        "image": "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=300&q=80"
+      }
+    ],
+    "otherTravelSites": [
+      {
+        "platform": "Tripadvisor",
+        "rating": "4.8/5",
+        "reviews": "6,859 reviews",
+        "icon": "tripadvisor"
+      },
+      {
+        "platform": "Tripadvisor",
+        "rating": "4.8/5",
+        "reviews": "6,855 reviews",
+        "icon": "tripadvisor"
+      },
+      {
+        "platform": "Trip.com",
+        "rating": "4.6/5",
+        "reviews": "92 reviews",
+        "icon": "tripcom"
+      }
+    ]
+  },
+  {
+    "canonicalId": "HOTEL002",
+    "locationId": "loc-goa-002",
+    "name": "Aurum Seaside Goa",
+    "fullName": "Aurum Seaside Goa - Luxury Beachfront Resort & Spa",
+    "category": "5-star resort",
+    "address": "Candolim Beach Road, Candolim, Goa 403515",
+    "breadcrumbs": ["Goa", "North Goa", "Candolim", "Aurum Seaside Goa - Luxury Beachfront Resort & Spa"],
+    "city": "Goa",
+    "searchTag": "luxury resort goa",
+    "pricePerNight": 32500,
+    "priceDisplay": "₹32,500",
+    "dates": "25 – 26 Nov",
+    "amenities": ["Beach access", "Infinity pool", "Free breakfast", "Spa", "Water sports", "Sea view suites"],
+    "competitors": [
+      {
+        "name": "Taj Fort Aguada Resort & Spa",
+        "price": "₹34,000",
+        "rating": 4.7,
+        "reviews": "14.2K",
+        "badge": "5-star resort · Beachfront",
+        "image": "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=300&q=80"
+      },
+      {
+        "name": "W Goa Vagator",
+        "price": "₹38,500",
+        "rating": 4.6,
+        "reviews": "9.4K",
+        "badge": "5-star resort · Ocean view",
+        "image": "https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=300&q=80"
+      }
+    ],
+    "otherTravelSites": [
+      {
+        "platform": "Tripadvisor",
+        "rating": "4.9/5",
+        "reviews": "4,120 reviews",
+        "icon": "tripadvisor"
+      },
+      {
+        "platform": "Booking.com",
+        "rating": "9.2/10",
+        "reviews": "3,480 reviews",
+        "icon": "booking"
+      },
+      {
+        "platform": "Trip.com",
+        "rating": "4.7/5",
+        "reviews": "210 reviews",
+        "icon": "tripcom"
+      }
+    ]
+  },
+  {
+    "canonicalId": "HOTEL003",
+    "locationId": "loc-jpr-003",
+    "name": "Aurum Heritage Jaipur",
+    "fullName": "Aurum Heritage Jaipur - Royal Palace & Heritage Haven",
+    "category": "5-star heritage hotel",
+    "address": "Civil Lines, Jaipur, Rajasthan 302006",
+    "breadcrumbs": ["Rajasthan", "Jaipur Division", "Jaipur", "Civil Lines", "Aurum Heritage Jaipur - Royal Palace & Heritage Haven"],
+    "city": "Jaipur",
+    "searchTag": "heritage palace jaipur",
+    "pricePerNight": 41200,
+    "priceDisplay": "₹41,200",
+    "dates": "25 – 26 Nov",
+    "amenities": ["Royal dining", "Heritage courtyard", "Palace architecture", "Free breakfast", "Butler service", "Spa"],
+    "competitors": [
+      {
+        "name": "Rambagh Palace Jaipur",
+        "price": "₹65,000",
+        "rating": 4.9,
+        "reviews": "11.8K",
+        "badge": "5-star luxury palace",
+        "image": "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=300&q=80"
+      },
+      {
+        "name": "The Oberoi Rajvilas",
+        "price": "₹58,000",
+        "rating": 4.8,
+        "reviews": "8.3K",
+        "badge": "5-star heritage resort",
+        "image": "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=300&q=80"
+      }
+    ],
+    "otherTravelSites": [
+      {
+        "platform": "Tripadvisor",
+        "rating": "4.9/5",
+        "reviews": "5,310 reviews",
+        "icon": "tripadvisor"
+      },
+      {
+        "platform": "Booking.com",
+        "rating": "9.4/10",
+        "reviews": "2,190 reviews",
+        "icon": "booking"
+      },
+      {
+        "platform": "Trip.com",
+        "rating": "4.8/5",
+        "reviews": "145 reviews",
+        "icon": "tripcom"
+      }
+    ]
+  }
+]

@@ -1,436 +1,429 @@
-'use client';
+"use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { PROPERTIES } from '@revora/shared';
-import {
-  AlertTriangle,
-  MapPin,
-  MessageSquarePlus,
-  RefreshCw,
-  Search,
-  Star,
-} from 'lucide-react';
-
-type StarRatingEnum = 'ONE' | 'TWO' | 'THREE' | 'FOUR' | 'FIVE';
-
-const STAR_NUM: Record<StarRatingEnum, number> = {
-  ONE: 1,
-  TWO: 2,
-  THREE: 3,
-  FOUR: 4,
-  FIVE: 5,
-};
-
-const NUM_STAR: Record<number, StarRatingEnum> = {
-  1: 'ONE',
-  2: 'TWO',
-  3: 'THREE',
-  4: 'FOUR',
-  5: 'FIVE',
-};
-
-interface GbpReviewItem {
-  reviewId: string;
-  locationId: string;
-  reviewer: {
-    displayName: string;
-    isAnonymous: boolean;
-  };
-  starRating: StarRatingEnum;
-  comment: string;
-  createTime: string;
-  updateTime: string;
-  reviewReply: {
-    comment: string;
-    updateTime: string;
-  } | null;
-}
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import hotelsData from "../../data/hotels.json";
+import { HotelProperty, GbpReview } from "@/types";
+import { SandboxBanner } from "@/components/SandboxBanner";
+import { GoogleHeader } from "@/components/GoogleHeader";
+import { SearchSidebar } from "@/components/SearchSidebar";
+import { HotelHeader } from "@/components/HotelHeader";
+import { GoogleReviewSummary } from "@/components/GoogleReviewSummary";
+import { ReviewCard } from "@/components/ReviewCard";
+import { WriteReviewModal } from "@/components/WriteReviewModal";
+import { CrmConnectionPanel } from "@/components/CrmConnectionPanel";
+import { STAR_MAP } from "@/lib/constants";
 
 export default function MockGooglePage() {
-  const [locationId, setLocationId] = useState('loc-blr-001');
-  const [reviews, setReviews] = useState<GbpReviewItem[]>([]);
-  const [avgRating, setAvgRating] = useState(0);
-  const [orderBy, setOrderBy] = useState('updateTime desc');
-  const [query, setQuery] = useState('');
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [modalOpen, setModalOpen] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const properties = hotelsData as HotelProperty[];
+  const [selectedLocationId, setSelectedLocationId] = useState<string>("loc-blr-001");
+  const [activeTab, setActiveTab] = useState<string>("Reviews");
+  const [reviews, setReviews] = useState<GbpReview[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [sortBy, setSortBy] = useState<"relevant" | "newest" | "highest" | "lowest">("relevant");
+  const [isWriteModalOpen, setIsWriteModalOpen] = useState<boolean>(false);
+  const [isCrmPanelOpen, setIsCrmPanelOpen] = useState<boolean>(false);
+  const [toastMessage, setToastMessage] = useState<{ text: string; type: "success" | "info" } | null>(null);
 
-  const [displayName, setDisplayName] = useState('');
-  const [stars, setStars] = useState(5);
-  const [comment, setComment] = useState('');
+  // Selected property object
+  const currentProperty = useMemo(() => {
+    return properties.find((p) => p.locationId === selectedLocationId) || properties[0];
+  }, [properties, selectedLocationId]);
 
-  const fetchReviews = useCallback(async () => {
+  // Fetch reviews using Bearer token per Spec
+  const fetchReviews = useCallback(async (isPolling = false) => {
     try {
+      if (!isPolling) setIsLoading(true);
       const res = await fetch(
-        `/api/v4/accounts/acc-aurum-01/locations/${locationId}/reviews?orderBy=${encodeURIComponent(
-          orderBy
-        )}`,
+        `/api/v4/accounts/acc-aurum-01/locations/${selectedLocationId}/reviews?pageSize=50`,
         {
-          headers: { Authorization: 'Bearer sandbox-gbp-token' },
-          cache: 'no-store',
+          headers: {
+            Authorization: "Bearer sandbox-gbp-token",
+          },
+          cache: "no-store",
         }
       );
-      if (!res.ok) return;
-      const data = (await res.json()) as {
-        reviews: GbpReviewItem[];
-        averageRating: number;
-      };
-      setReviews(data.reviews || []);
-      setAvgRating(data.averageRating || 0);
-    } catch {
-      // ignore poll error
+      if (res.ok) {
+        const data = await res.json();
+        setReviews(data.reviews || []);
+      }
+    } catch (err) {
+      console.error("Error fetching reviews:", err);
+    } finally {
+      if (!isPolling) setIsLoading(false);
     }
-  }, [locationId, orderBy]);
+  }, [selectedLocationId]);
 
+  // Initial fetch on property change
   useEffect(() => {
-    fetchReviews();
-    const t = setInterval(fetchReviews, 3000);
-    return () => clearInterval(t);
+    fetchReviews(false);
   }, [fetchReviews]);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const res = await fetch('/api/ui/reviews', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        locationId,
-        displayName: displayName.trim() || 'Google Local Guide',
-        starRating: NUM_STAR[stars] || 'FIVE',
-        comment: comment.trim(),
-      }),
-    });
-    const data = (await res.json()) as { webhookDelivered?: boolean };
-    setModalOpen(false);
-    setDisplayName('');
-    setStars(5);
-    setComment('');
-    setToast(
-      data.webhookDelivered
-        ? 'Review posted • Cloud Pub/Sub NEW_REVIEW webhook delivered to Revora CRM!'
-        : 'Review saved locally (Revora CRM :4000 offline — ready to sync).'
-    );
-    await fetchReviews();
-  }
+  // 3-second Auto-polling per Spec §6.4
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchReviews(true);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [fetchReviews]);
 
-  const activeProp =
-    PROPERTIES.find((p) => p.googleLocationId === locationId) || PROPERTIES[0];
+  // Auto-hide toast
+  useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => {
+        setToastMessage(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage]);
 
-  const visibleReviews = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return reviews;
-    return reviews.filter(
-      (r) =>
-        r.reviewer.displayName.toLowerCase().includes(q) ||
-        r.comment.toLowerCase().includes(q)
-    );
-  }, [reviews, query]);
+  // Filter & Sort reviews
+  const filteredReviews = useMemo(() => {
+    let result = [...reviews];
 
-  const histogram = useMemo(() => {
-    const counts: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-    for (const r of reviews) counts[STAR_NUM[r.starRating]]++;
-    return counts;
-  }, [reviews]);
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        (r) =>
+          r.comment.toLowerCase().includes(query) ||
+          r.reviewer.displayName.toLowerCase().includes(query)
+      );
+    }
+
+    if (sortBy === "newest") {
+      result.sort(
+        (a, b) => new Date(b.createTime).getTime() - new Date(a.createTime).getTime()
+      );
+    } else if (sortBy === "highest") {
+      result.sort((a, b) => (STAR_MAP[b.starRating] || 5) - (STAR_MAP[a.starRating] || 5));
+    } else if (sortBy === "lowest") {
+      result.sort((a, b) => (STAR_MAP[a.starRating] || 5) - (STAR_MAP[b.starRating] || 5));
+    }
+
+    return result;
+  }, [reviews, searchQuery, sortBy]);
+
+  // Review submission callback
+  const handleReviewSubmitted = (newReview: GbpReview, webhookDelivered: boolean) => {
+    setReviews((prev) => [newReview, ...prev]);
+    if (webhookDelivered) {
+      setToastMessage({
+        text: "Review posted • Cloud Pub/Sub NEW_REVIEW webhook delivered to Revora CRM (localhost:4000)",
+        type: "success",
+      });
+    } else {
+      setToastMessage({
+        text: "Review posted • Saved locally in data/reviews.json (CRM backend localhost:4000 is currently offline)",
+        type: "info",
+      });
+    }
+  };
+
+  // Simulate CRM AI owner reply handler
+  const handleSimulateReply = async (reviewId: string) => {
+    const targetReview = reviews.find((r) => r.reviewId === reviewId);
+    if (!targetReview) return;
+
+    const isNegative = targetReview.starRating === "ONE" || targetReview.starRating === "TWO";
+    const sampleReplyComment = isNegative
+      ? `Dear ${targetReview.reviewer.displayName},\n\nNamaste from ${currentProperty.name}.\n\nThank you for taking the time to share your candid feedback. We are deeply concerned to learn that your recent stay did not meet the five-star standards we strive to deliver.\n\nOur leadership and guest relations team have taken immediate note of the issues raised in your review. Please allow us an opportunity to investigate this thoroughly and connect with you directly.\n\nWarm Regards,\nNishant Agarwal\nVice President and General Manager\n${currentProperty.name}`
+      : `Dear ${targetReview.reviewer.displayName},\n\nNamaste from ${currentProperty.name}!\n\nThank you for sharing your wonderful feedback. We are thrilled to know you had an exceptional stay and that our hospitality, cuisine, and team made your visit memorable.\n\nWe look forward to welcoming you back for another delightful experience in the near future.\n\nWarm Regards,\nNishant Agarwal\nVice President and General Manager\n${currentProperty.name}`;
+
+    try {
+      const res = await fetch(
+        `/api/v4/accounts/acc-aurum-01/locations/${selectedLocationId}/reviews/${reviewId}/reply`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer sandbox-gbp-token",
+          },
+          body: JSON.stringify({ comment: sampleReplyComment }),
+        }
+      );
+
+      if (res.ok) {
+        setToastMessage({
+          text: `Owner response published via PUT /api/v4/.../reply for ${targetReview.reviewer.displayName}`,
+          type: "success",
+        });
+        fetchReviews(true);
+      }
+    } catch (err) {
+      console.error("Error simulating reply:", err);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="flex items-center justify-center gap-2 bg-amber-400 px-4 py-1.5 text-xs font-bold text-slate-950">
-        <AlertTriangle className="h-3.5 w-3.5" />
-        SANDBOX / SIMULATION — Mock Google Business Profile (Local Demo Only — Not Live
-        Google)
+    <div className="min-h-screen bg-[#f8f9fa] flex flex-col font-sans">
+      {/* 1. Mandatory Persistent Sandbox Banner */}
+      <SandboxBanner />
+
+      {/* 2. Google Travel Navigation Header */}
+      <GoogleHeader
+        properties={properties}
+        selectedLocationId={selectedLocationId}
+        onSelectProperty={(locId) => setSelectedLocationId(locId)}
+        onOpenCrmInfo={() => setIsCrmPanelOpen(true)}
+      />
+
+      {/* Toast Alert */}
+      {toastMessage && (
+        <aside
+          aria-live="polite"
+          className={`fixed bottom-20 right-6 z-50 max-w-md p-4 rounded-xl shadow-lg border text-xs leading-relaxed animate-in slide-in-from-bottom duration-200 ${
+            toastMessage.type === "success"
+              ? "bg-emerald-900 text-emerald-100 border-emerald-700"
+              : "bg-stone-900 text-stone-100 border-stone-700"
+          }`}
+        >
+          <div className="flex items-start gap-2.5">
+            <span className="text-base">
+              {toastMessage.type === "success" ? "✓" : "ℹ"}
+            </span>
+            <div className="flex-1 font-medium">{toastMessage.text}</div>
+            <button
+              type="button"
+              onClick={() => setToastMessage(null)}
+              aria-label="Close notification"
+              className="text-stone-400 hover:text-white ml-1"
+            >
+              ✕
+            </button>
+          </div>
+        </aside>
+      )}
+
+      {/* Main Split Layout: Left Search Sidebar + Right Hotel Content */}
+      <div className="flex-1 flex flex-col lg:flex-row">
+        {/* Left Search Sidebar (Screenshot 3) */}
+        <SearchSidebar
+          property={currentProperty}
+          reviewCount={reviews.length}
+          averageRating={
+            reviews.length > 0
+              ? reviews.reduce((sum, r) => sum + (STAR_MAP[r.starRating] || 5), 0) /
+                reviews.length
+              : 4.6
+          }
+        />
+
+        {/* Right Main Content Area */}
+        <main className="flex-1 overflow-y-auto bg-white flex flex-col min-w-0">
+          {/* Breadcrumbs, Hotel Title & Tabs */}
+          <HotelHeader
+            property={currentProperty}
+            activeTab={activeTab}
+            onTabChange={(tab) => setActiveTab(tab)}
+          />
+
+          {/* Main Tab Content */}
+          <div className="p-6 max-w-4xl space-y-8 pb-32">
+            {activeTab === "Reviews" ? (
+              <>
+                {/* Google Review Summary & Histogram (Screenshot 3) */}
+                <GoogleReviewSummary
+                  property={currentProperty}
+                  reviews={reviews}
+                />
+
+                <hr className="border-gray-200" />
+
+                {/* Reviews Header Section */}
+                <div>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-xl font-normal text-[#202124]">
+                        Reviews
+                      </h2>
+                      {/* Live Polling Indicator */}
+                      <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full text-[11px] font-medium">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                        <span>Live sync active (3s polling)</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {/* Manual Refresh Button */}
+                      <button
+                        type="button"
+                        onClick={() => fetchReviews(false)}
+                        title="Refresh reviews"
+                        className="p-2 border border-gray-300 rounded-full hover:bg-gray-50 text-gray-600 transition"
+                      >
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="23 4 23 10 17 10" />
+                          <polyline points="1 20 1 14 7 14" />
+                          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                        </svg>
+                      </button>
+
+                      {/* "Write a review" Button (Screenshot 3) */}
+                      <button
+                        type="button"
+                        onClick={() => setIsWriteModalOpen(true)}
+                        className="flex items-center gap-2 bg-[#1a73e8] hover:bg-[#1557b0] text-white text-xs font-semibold px-4 py-2 rounded-full transition shadow-xs"
+                      >
+                        <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                        </svg>
+                        <span>Write a review</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Search Reviews & Sort Chips */}
+                  <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    {/* Search Reviews Input */}
+                    <div className="relative flex-1 max-w-md">
+                      <svg
+                        className="w-4 h-4 text-gray-400 absolute left-3 top-2.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      <input
+                        type="text"
+                        placeholder="Search reviews"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full text-xs pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#1a73e8]"
+                      />
+                    </div>
+
+                    {/* Sort Pills */}
+                    <div className="flex items-center gap-1.5 overflow-x-auto text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setSortBy("relevant")}
+                        className={`px-3 py-1.5 rounded-full border transition whitespace-nowrap ${
+                          sortBy === "relevant"
+                            ? "bg-[#e8f0fe] text-[#1a73e8] border-[#1a73e8] font-semibold"
+                            : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        Most relevant
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSortBy("newest")}
+                        className={`px-3 py-1.5 rounded-full border transition whitespace-nowrap ${
+                          sortBy === "newest"
+                            ? "bg-[#e8f0fe] text-[#1a73e8] border-[#1a73e8] font-semibold"
+                            : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        Newest
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSortBy("highest")}
+                        className={`px-3 py-1.5 rounded-full border transition whitespace-nowrap ${
+                          sortBy === "highest"
+                            ? "bg-[#e8f0fe] text-[#1a73e8] border-[#1a73e8] font-semibold"
+                            : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        Highest rating
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSortBy("lowest")}
+                        className={`px-3 py-1.5 rounded-full border transition whitespace-nowrap ${
+                          sortBy === "lowest"
+                            ? "bg-[#e8f0fe] text-[#1a73e8] border-[#1a73e8] font-semibold"
+                            : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        Lowest rating
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Review Cards List (Screenshots 1, 2, 4) */}
+                <div className="space-y-4">
+                  {isLoading ? (
+                    <div className="py-12 text-center text-xs text-gray-500">
+                      Loading authentic reviews...
+                    </div>
+                  ) : filteredReviews.length === 0 ? (
+                    <div className="py-12 text-center text-xs text-gray-500">
+                      No reviews found matching &quot;{searchQuery}&quot;
+                    </div>
+                  ) : (
+                    filteredReviews.map((review) => (
+                      <ReviewCard
+                        key={review.reviewId}
+                        review={review}
+                        onSimulateReply={handleSimulateReply}
+                      />
+                    ))
+                  )}
+                </div>
+              </>
+            ) : (
+              /* Overview / Other Tabs fallback preview */
+              <div className="space-y-6">
+                <div className="border border-gray-200 rounded-xl p-6 bg-gray-50 text-center">
+                  <h3 className="text-base font-semibold text-gray-900 mb-2">
+                    {activeTab} of {currentProperty.name}
+                  </h3>
+                  <p className="text-xs text-gray-600 max-w-md mx-auto">
+                    This section presents {activeTab.toLowerCase()} details. For our hackathon demonstration and evaluation, please navigate to the active <strong>Reviews</strong> tab.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("Reviews")}
+                    className="mt-4 px-4 py-2 bg-[#1a73e8] text-white text-xs font-semibold rounded-full hover:bg-[#1557b0] transition"
+                  >
+                    View Reviews & Pub/Sub Integration
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Sticky Bottom Bar (Matching Screenshot 3) */}
+          <footer className="fixed bottom-0 right-0 left-0 lg:left-[380px] xl:left-[420px] bg-white border-t border-gray-200 px-6 py-3 flex items-center justify-between shadow-lg z-30">
+            <div>
+              <div className="text-xs font-semibold text-[#202124] line-clamp-1">
+                {currentProperty.fullName}
+              </div>
+              <div className="flex items-center gap-2 text-xs text-[#5f6368] mt-0.5">
+                <span className="font-bold text-[#202124] text-sm">
+                  {currentProperty.priceDisplay}
+                </span>
+                <span>•</span>
+                <span>{currentProperty.dates}</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="bg-[#1a73e8] hover:bg-[#1557b0] text-white text-xs font-semibold px-6 py-2.5 rounded-full transition shadow-xs"
+            >
+              View prices
+            </button>
+          </footer>
+        </main>
       </div>
 
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-4 py-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-bold text-slate-900">{activeProp.name}</span>
-              <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-semibold text-blue-700">
-                Google Maps Mock
-              </span>
-            </div>
-            <p className="mt-0.5 flex items-center gap-1 text-xs text-slate-500">
-              <MapPin className="h-3.5 w-3.5" /> {activeProp.address}
-            </p>
-          </div>
+      {/* Write a Review Modal */}
+      <WriteReviewModal
+        isOpen={isWriteModalOpen}
+        onClose={() => setIsWriteModalOpen(false)}
+        property={currentProperty}
+        onSubmitSuccess={handleReviewSubmitted}
+      />
 
-          <div className="flex flex-wrap items-center gap-2.5">
-            <select
-              value={locationId}
-              onChange={(e) => setLocationId(e.target.value)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-800"
-            >
-              {PROPERTIES.map((p) => (
-                <option key={p.googleLocationId} value={p.googleLocationId}>
-                  {p.name} ({p.googleLocationId})
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={fetchReviews}
-              className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-            >
-              <RefreshCw className="h-3.5 w-3.5" /> Refresh
-            </button>
-            <button
-              type="button"
-              onClick={() => setModalOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
-            >
-              <MessageSquarePlus className="h-3.5 w-3.5" /> Write a review
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-5xl space-y-5 px-4 py-6">
-        {toast && (
-          <div className="flex items-center justify-between rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-xs font-medium text-blue-900">
-            <span>{toast}</span>
-            <button type="button" onClick={() => setToast(null)} className="underline">
-              Dismiss
-            </button>
-          </div>
-        )}
-
-        {/* Rating Summary Card */}
-        <section className="grid grid-cols-1 gap-6 rounded-2xl border border-slate-200 bg-white p-6 md:grid-cols-12">
-          <div className="flex flex-col justify-center md:col-span-4">
-            <p className="text-4xl font-bold text-slate-900">{avgRating.toFixed(1)}</p>
-            <div className="mt-1 flex items-center gap-0.5">
-              {[1, 2, 3, 4, 5].map((s) => (
-                <Star
-                  key={s}
-                  className={`h-4 w-4 ${
-                    s <= Math.round(avgRating)
-                      ? 'fill-amber-400 text-amber-400'
-                      : 'text-slate-300'
-                  }`}
-                />
-              ))}
-            </div>
-            <p className="mt-1 text-xs text-slate-500">{reviews.length} reviews</p>
-          </div>
-
-          <div className="space-y-1.5 md:col-span-8">
-            {[5, 4, 3, 2, 1].map((n) => {
-              const pct = reviews.length
-                ? Math.round((histogram[n] / reviews.length) * 100)
-                : 0;
-              return (
-                <div key={n} className="flex items-center gap-2 text-xs">
-                  <span className="w-3 font-medium text-slate-600">{n}</span>
-                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      className="h-full rounded-full bg-amber-400"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                  <span className="w-6 text-right text-[11px] text-slate-400">
-                    {histogram[n]}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Sort & Search */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            {[
-              { id: 'updateTime desc', label: 'Newest' },
-              { id: 'rating desc', label: 'Highest' },
-              { id: 'rating asc', label: 'Lowest' },
-            ].map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => setOrderBy(s.id)}
-                className={`rounded-full px-3.5 py-1.5 text-xs font-medium ${
-                  orderBy === s.id
-                    ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-300'
-                    : 'border border-slate-200 bg-white text-slate-600'
-                }`}
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-2 h-3.5 w-3.5 text-slate-400" />
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search Google reviews..."
-              className="w-full rounded-full border border-slate-200 bg-white py-1.5 pl-8 pr-3 text-xs outline-none focus:border-blue-500"
-            />
-          </div>
-        </div>
-
-        {/* Review Cards */}
-        <div className="space-y-3">
-          {visibleReviews.map((rev) => {
-            const numStars = STAR_NUM[rev.starRating];
-            const isLong = rev.comment.length > 160;
-            const isExp = Boolean(expanded[rev.reviewId]);
-
-            return (
-              <article
-                key={rev.reviewId}
-                className="rounded-2xl border border-slate-200 bg-white p-5"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">
-                      {rev.reviewer.displayName}
-                    </p>
-                    <div className="mt-0.5 flex items-center gap-2">
-                      <div className="flex items-center gap-0.5">
-                        {[1, 2, 3, 4, 5].map((s) => (
-                          <Star
-                            key={s}
-                            className={`h-3.5 w-3.5 ${
-                              s <= numStars
-                                ? 'fill-amber-400 text-amber-400'
-                                : 'text-slate-300'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <span className="text-[11px] text-slate-400">
-                        {new Date(rev.createTime).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <p className="mt-2.5 text-xs leading-relaxed text-slate-700">
-                  {isLong && !isExp ? `${rev.comment.slice(0, 160)}...` : rev.comment}
-                </p>
-
-                {isLong && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setExpanded((p) => ({ ...p, [rev.reviewId]: !isExp }))
-                    }
-                    className="mt-1 text-xs font-semibold text-blue-600 hover:underline"
-                  >
-                    {isExp ? 'Show less' : 'Read more'}
-                  </button>
-                )}
-
-                {rev.reviewReply && (
-                  <div className="mt-3 rounded-xl border-l-4 border-blue-500 bg-slate-50 p-3.5 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-slate-900">
-                        Response from the owner
-                      </span>
-                      <span className="text-[11px] text-slate-400">
-                        {new Date(rev.reviewReply.updateTime).toLocaleString()}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-slate-700">{rev.reviewReply.comment}</p>
-                  </div>
-                )}
-              </article>
-            );
-          })}
-        </div>
-      </main>
-
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
-            <h2 className="text-sm font-bold text-slate-900">
-              {activeProp.name} — Write a Google Review
-            </h2>
-
-            <div className="mt-2.5 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setDisplayName('Ananya Kapoor');
-                  setStars(5);
-                  setComment(
-                    `Wonderful stay at ${activeProp.name}! Quick check-in, spotless room, and super polite front desk staff.`
-                  );
-                }}
-                className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-800"
-              >
-                Quick Fill: 5★ Praise
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setDisplayName('Vikram Malhotra');
-                  setStars(1);
-                  setComment(
-                    'Booked my room for ₹5,000 inclusive of taxes, but at checkout I was billed ₹6,200 with unexplained extra charges. Requesting an immediate refund.'
-                  );
-                }}
-                className="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-800"
-              >
-                Quick Fill: ₹5,000 vs ₹6,200 Dispute
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="mt-3 space-y-3 text-xs">
-              <input
-                required
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Your Name"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2"
-              />
-              <div className="flex items-center gap-1">
-                {[1, 2, 3, 4, 5].map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => setStars(s)}
-                    className="p-0.5"
-                  >
-                    <Star
-                      className={`h-5 w-5 ${
-                        s <= stars ? 'fill-amber-400 text-amber-400' : 'text-slate-300'
-                      }`}
-                    />
-                  </button>
-                ))}
-              </div>
-              <textarea
-                required
-                rows={4}
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                placeholder="Share details of your own experience at this place..."
-                className="w-full rounded-lg border border-slate-300 p-3"
-              />
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setModalOpen(false)}
-                  className="rounded-lg border border-slate-300 px-3 py-1.5"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="rounded-lg bg-blue-600 px-4 py-1.5 font-semibold text-white"
-                >
-                  Post
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Revora CRM Connection & Pub/Sub Architecture Panel */}
+      <CrmConnectionPanel
+        isOpen={isCrmPanelOpen}
+        onClose={() => setIsCrmPanelOpen(false)}
+      />
     </div>
   );
 }
