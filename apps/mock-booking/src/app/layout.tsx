@@ -1,9 +1,11 @@
-import type { Metadata } from 'next';
-import './globals.css';
+import type { Metadata } from "next";
+import "./globals.css";
 
 export const metadata: Metadata = {
-  title: 'Mock Booking.com — Guest Reviews Sandbox (THE LEELA PALACE BANGALORE)',
-  description: 'Sandbox Booking.com Guest Review UI for Revora AI Hackathon',
+  title:
+    "Aurum Grand Bengaluru, Bangalore (updated prices 2026) — Booking.com Sandbox",
+  description:
+    "Mock Booking.com Guest Reviews & Hotel Listing Sandbox for Revora AI (Aurum Grand Hospitality).",
 };
 
 export default function RootLayout({
@@ -13,9 +15,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-slate-50 text-slate-900 antialiased">
+      <body className="bg-white text-[#1a1a1a] antialiased selection:bg-[#006ce4] selection:text-white">
         {children}
       </body>
     </html>
   );
 }
+
