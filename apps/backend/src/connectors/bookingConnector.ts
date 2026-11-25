@@ -78,7 +78,7 @@ export async function isBookingMockOnline(): Promise<boolean> {
       `${CONFIG.mockBookingUrl}/api/review-api/properties/800101/reviews`,
       {
         headers: { Authorization: `Bearer ${CONFIG.sandboxBookingToken}` },
-        signal: AbortSignal.timeout(400),
+        signal: AbortSignal.timeout(1500),
       }
     );
     return res.ok;

@@ -290,7 +290,22 @@ export async function analyzeReview(review: CanonicalReview): Promise<{
         .trim();
 
       const parsedJson = JSON.parse(jsonText);
+      if (
+        parsedJson &&
+        typeof parsedJson === 'object' &&
+        (!Array.isArray(parsedJson.categories) || parsedJson.categories.length === 0)
+      ) {
+        parsedJson.categories = [parsedJson.primaryCategory || 'facilities'];
+      }
       const validated = AnalysisOutputSchema.parse(parsedJson);
+
+      // Enforce OTA moderation rule (strip accidental URLs, emails, or 10+ digit phone numbers)
+      validated.draftReply = validated.draftReply
+        .replace(/https?:\/\/\S+|www\.\S+/gi, 'our hotel desk')
+        .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, 'our guest relations team')
+        .replace(/\+?\d[\d\s-]{8,}\d/g, 'our front desk')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
 
       if (injection && !validated.promptInjectionDetected) {
         validated.promptInjectionDetected = true;

@@ -56,6 +56,9 @@ export interface PolicyDocSummary {
   department: string;
   category: string;
   propertyScope: string;
+  wordCount?: number;
+  estimatedPages?: number;
+  chunksCount?: number;
   chunks: { id: string; sectionRef: string; content: string }[];
 }
 

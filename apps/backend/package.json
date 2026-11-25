@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "NODE_OPTIONS='--experimental-sqlite --no-warnings' tsx watch src/server.ts",
-    "worker": "NODE_OPTIONS='--experimental-sqlite --no-warnings' tsx src/worker/index.ts",
-    "worker:once": "NODE_OPTIONS='--experimental-sqlite --no-warnings' tsx src/worker/runOnce.ts",
-    "seed": "NODE_OPTIONS='--experimental-sqlite --no-warnings' tsx src/db/seed.ts",
+    "dev": "tsx watch src/server.ts",
+    "worker": "tsx src/worker/index.ts",
+    "worker:once": "tsx src/worker/runOnce.ts",
+    "seed": "tsx src/db/seed.ts",
     "build": "tsc",
-    "start": "node --experimental-sqlite --no-warnings dist/server.js",
-    "start:worker": "node --experimental-sqlite --no-warnings dist/worker/index.js"
+    "start": "node dist/server.js",
+    "start:worker": "node dist/worker/index.js"
   },
   "dependencies": {
     "@google/genai": "^1.0.0",

@@ -240,6 +240,68 @@ export function CaseDrawer({
               </div>
 
               {analysis && (
+                <div className="rounded-xl border border-slate-200 bg-white p-3.5">
+                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                    Live Processing Pipeline
+                  </p>
+                  <div className="grid grid-cols-5 gap-1.5 text-center text-[10px] font-semibold">
+                    <div className="rounded-lg bg-emerald-50 px-1.5 py-1.5 text-emerald-800">
+                      1. Ingested
+                      <div className="mt-0.5 truncate text-[9px] font-normal text-emerald-700">
+                        {CHANNEL_LABEL[review.platform]}
+                      </div>
+                    </div>
+                    <div className="rounded-lg bg-emerald-50 px-1.5 py-1.5 text-emerald-800">
+                      2. SQLite Queue
+                      <div className="mt-0.5 text-[9px] font-normal text-emerald-700">
+                        Claimed
+                      </div>
+                    </div>
+                    <div
+                      className={`rounded-lg px-1.5 py-1.5 ${
+                        analysis.aiMode === 'gemini_live'
+                          ? 'bg-emerald-50 text-emerald-800'
+                          : 'bg-amber-50 text-amber-800'
+                      }`}
+                    >
+                      3. Gemini AI
+                      <div className="mt-0.5 text-[9px] font-normal">
+                        {analysis.aiMode === 'gemini_live' ? 'Gemini Live' : 'Fallback'}
+                      </div>
+                    </div>
+                    <div
+                      className={`rounded-lg px-1.5 py-1.5 ${
+                        escalation
+                          ? 'bg-rose-50 text-rose-800'
+                          : 'bg-emerald-50 text-emerald-800'
+                      }`}
+                    >
+                      4. Policy Gate
+                      <div className="mt-0.5 text-[9px] font-normal">
+                        {escalation ? 'Escalated' : 'Routine'}
+                      </div>
+                    </div>
+                    <div
+                      className={`rounded-lg px-1.5 py-1.5 ${
+                        review.responseStatus === 'auto_published' ||
+                        review.responseStatus === 'approved_published'
+                          ? 'bg-emerald-50 text-emerald-800'
+                          : 'bg-amber-50 text-amber-800'
+                      }`}
+                    >
+                      5. Channel Reply
+                      <div className="mt-0.5 text-[9px] font-normal">
+                        {review.responseStatus === 'auto_published' ||
+                        review.responseStatus === 'approved_published'
+                          ? 'Published'
+                          : 'Pending'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {analysis && (
                 <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4">
                   <div className="flex items-center justify-between">
                     <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-950">

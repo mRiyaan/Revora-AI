@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AuditLogEntry,
   DemoRole,
@@ -13,10 +13,12 @@ import {
 } from '@revora/shared';
 import {
   ExternalLink,
+  FolderUp,
   RefreshCw,
   RotateCcw,
   Search,
   Star,
+  Upload,
 } from 'lucide-react';
 import { CrmSidebar, CrmView } from '@/components/CrmSidebar';
 import { CaseDrawer } from '@/components/CaseDrawer';
@@ -84,6 +86,8 @@ export default function RevoraConnectedCrmPage() {
   const [busy, setBusy] = useState(false);
   const [backendError, setBackendError] = useState<string | null>(null);
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const fileUploadRef = useRef<HTMLInputElement | null>(null);
+  const folderUploadRef = useRef<HTMLInputElement | null>(null);
 
   const loadAll = useCallback(async () => {
     try {
@@ -147,6 +151,41 @@ export default function RevoraConnectedCrmPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function handleUploadSopFiles(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) return;
+    const validFiles = Array.from(fileList).filter((f) =>
+      /\.(md|txt)$/i.test(f.name)
+    );
+    if (validFiles.length === 0) {
+      setToast({
+        type: 'err',
+        text: 'Select .md or .txt SOP files or a folder containing .md/.txt SOPs.',
+      });
+      return;
+    }
+
+    await execAction(async () => {
+      const payloadFiles = await Promise.all(
+        validFiles.map(async (file) => ({
+          filename: file.name,
+          content: await file.text(),
+        }))
+      );
+      const res = await apiRequest<{
+        filesSaved: string[];
+        policiesCount: number;
+        chunksCount: number;
+      }>('/api/policies/upload', {
+        method: 'POST',
+        role: activeRole,
+        body: { files: payloadFiles },
+      });
+      return {
+        message: `Uploaded & indexed ${res.filesSaved.length} SOP file(s) — ${res.chunksCount} total sections indexed.`,
+      };
+    });
   }
 
   async function handleSaveApiKey(key: string) {
@@ -558,20 +597,63 @@ export default function RevoraConnectedCrmPage() {
                     className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-xs outline-none focus:border-slate-400"
                   />
                 </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    execAction(() =>
-                      apiRequest('/api/policies/reindex', {
-                        method: 'POST',
-                        role: activeRole,
-                      }).then(() => ({ message: 'Reindexed SOP manuals into vector store.' }))
-                    )
-                  }
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                >
-                  Reindex SOPs (Admin)
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    ref={fileUploadRef}
+                    type="file"
+                    accept=".md,.txt"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      handleUploadSopFiles(e.target.files);
+                      e.target.value = '';
+                    }}
+                  />
+                  <input
+                    ref={folderUploadRef}
+                    type="file"
+                    multiple
+                    {...({ webkitdirectory: '', directory: '' } as Record<string, string>)}
+                    className="hidden"
+                    onChange={(e) => {
+                      handleUploadSopFiles(e.target.files);
+                      e.target.value = '';
+                    }}
+                  />
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => fileUploadRef.current?.click()}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800 disabled:opacity-60"
+                  >
+                    <Upload className="h-3.5 w-3.5" />
+                    Upload SOP File (Admin)
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => folderUploadRef.current?.click()}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                  >
+                    <FolderUp className="h-3.5 w-3.5" />
+                    Upload SOP Folder (Admin)
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() =>
+                      execAction(() =>
+                        apiRequest('/api/policies/reindex', {
+                          method: 'POST',
+                          role: activeRole,
+                        }).then(() => ({ message: 'Reindexed SOP manuals into vector store.' }))
+                      )
+                    }
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                  >
+                    Reindex SOPs (Admin)
+                  </button>
+                </div>
               </div>
 
               {sopQuery.trim() && sopUnavailable ? (
@@ -586,22 +668,36 @@ export default function RevoraConnectedCrmPage() {
                         key: m.chunkId,
                         code: `${m.policyCode} — ${m.sectionRef}`,
                         dept: `${m.department} • ${(m.score * 100).toFixed(0)}%`,
+                        meta: m.docTitle,
                         body: m.excerpt,
                       }))
-                    : policies.map((m) => ({
-                        key: m.id,
-                        code: `${m.policyCode} (v${m.version}) — ${m.docTitle}`,
-                        dept: m.department,
-                        body: m.chunks.map((c) => c.sectionRef).join(' • '),
-                      }))
+                    : policies.map((m) => {
+                        const previewRefs = m.chunks.slice(0, 6).map((c) => c.sectionRef);
+                        const extra =
+                          m.chunks.length > 6
+                            ? ` • +${m.chunks.length - 6} more sections indexed`
+                            : '';
+                        return {
+                          key: m.id,
+                          code: `${m.policyCode} (v${m.version}) — ${m.docTitle}`,
+                          dept: m.department,
+                          meta: `~${m.estimatedPages || 1} pages • ${m.chunksCount ?? m.chunks.length} sections`,
+                          body: `${previewRefs.join(' • ')}${extra}`,
+                        };
+                      })
                   ).map((card) => (
                     <div
                       key={card.key}
                       className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs"
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs font-semibold text-slate-900">{card.code}</p>
-                        <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-xs font-semibold text-slate-900">{card.code}</p>
+                          <p className="mt-0.5 text-[11px] font-medium text-indigo-600">
+                            {card.meta}
+                          </p>
+                        </div>
+                        <span className="shrink-0 rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
                           {card.dept}
                         </span>
                       </div>

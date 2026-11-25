@@ -27,20 +27,30 @@ let dbInstance: SqliteDbWrapper | null = null;
 export function getDb(): SqliteDbWrapper {
   if (!dbInstance) {
     fs.mkdirSync(path.dirname(CONFIG.sqlitePath), { recursive: true });
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { DatabaseSync } = require('node:sqlite') as {
-      DatabaseSync: new (file: string) => {
-        exec(sql: string): void;
-        prepare(sql: string): {
-          get(...args: SqlParam[]): unknown;
-          all(...args: SqlParam[]): unknown[];
-          run(...args: SqlParam[]): { changes: number | bigint; lastInsertRowid: number | bigint };
-        };
-        close(): void;
+    let raw: {
+      exec(sql: string): void;
+      prepare(sql: string): {
+        get(...args: SqlParam[]): unknown;
+        all(...args: SqlParam[]): unknown[];
+        run(...args: SqlParam[]): { changes: number | bigint; lastInsertRowid: number | bigint };
       };
+      close(): void;
     };
 
-    const raw = new DatabaseSync(CONFIG.sqlitePath);
+    try {
+      // Node 20 (outside sandbox) natively loads better-sqlite3 prebuilt ABI 115
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const BetterSqlite3 = require('better-sqlite3') as new (file: string) => typeof raw;
+      raw = new BetterSqlite3(CONFIG.sqlitePath);
+    } catch {
+      // Node 22+ (sandbox) falls back to built-in node:sqlite
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { DatabaseSync } = require('node:sqlite') as {
+        DatabaseSync: new (file: string) => typeof raw;
+      };
+      raw = new DatabaseSync(CONFIG.sqlitePath);
+    }
+
     raw.exec('PRAGMA journal_mode = WAL;');
     raw.exec('PRAGMA busy_timeout = 5000;');
     raw.exec('PRAGMA foreign_keys = ON;');

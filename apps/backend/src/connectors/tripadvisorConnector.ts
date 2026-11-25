@@ -60,7 +60,7 @@ export async function isTripadvisorMockOnline(): Promise<boolean> {
   try {
     const res = await fetch(`${CONFIG.mockTripadvisorUrl}/api/allowlist`, {
       headers: { 'x-oauth-token': CONFIG.sandboxTerraOauthToken },
-      signal: AbortSignal.timeout(400),
+      signal: AbortSignal.timeout(1500),
     });
     return res.ok;
   } catch {

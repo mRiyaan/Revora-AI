@@ -9,3 +9,5 @@ storage/qdrant/*
 !storage/qdrant/.gitkeep
 *.log
 .DS_Store
+apps/mock-booking/data/
+apps/mock-google/data/

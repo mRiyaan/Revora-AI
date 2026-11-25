@@ -68,7 +68,7 @@ export async function isGoogleMockOnline(): Promise<boolean> {
       `${CONFIG.mockGoogleUrl}/api/v4/accounts/acc-aurum-01/locations/loc-blr-001/reviews`,
       {
         headers: { Authorization: `Bearer ${CONFIG.sandboxGbpToken}` },
-        signal: AbortSignal.timeout(400),
+        signal: AbortSignal.timeout(1500),
       }
     );
     return res.ok;

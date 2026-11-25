@@ -103,7 +103,10 @@ function parseSopFiles(): {
   chunks: SopChunkRecord[];
 } {
   const files = fs.existsSync(CONFIG.sopsDir)
-    ? fs.readdirSync(CONFIG.sopsDir).filter((f) => f.endsWith('.md'))
+    ? fs
+        .readdirSync(CONFIG.sopsDir)
+        .filter((f) => f.endsWith('.md') || f.endsWith('.txt'))
+        .sort()
     : [];
 
   const policies: {
@@ -130,7 +133,8 @@ function parseSopFiles(): {
       return m ? m[1].trim() : fallback;
     };
 
-    const policyCode = extractMeta('Policy Code', file.replace('.md', '').toUpperCase());
+    const baseCode = file.replace(/\.(md|txt)$/i, '').toUpperCase().replace(/[^A-Z0-9]+/g, '-');
+    const policyCode = extractMeta('Policy Code', `SOP-${baseCode}`);
     const version = extractMeta('Version', '1.0');
     const department = extractMeta('Department', 'Support');
     const category = extractMeta('Category', 'general').toLowerCase();
@@ -149,33 +153,80 @@ function parseSopFiles(): {
     });
 
     const sectionMatches = raw.split(/^##\s+/m).slice(1);
-    sectionMatches.forEach((sectionBlock, idx) => {
-      const blockLines = sectionBlock.trim().split('\n');
-      const heading = blockLines[0].trim();
-      const content = blockLines.slice(1).join('\n').trim();
-      if (!content) return;
+    if (sectionMatches.length > 0) {
+      sectionMatches.forEach((sectionBlock, idx) => {
+        const blockLines = sectionBlock.trim().split('\n');
+        const heading = blockLines[0].trim();
+        const content = blockLines.slice(1).join('\n').trim();
+        if (!content) return;
 
-      const secMatch = heading.match(/(Section\s+[\d.]+)/i);
-      const sectionRef = secMatch ? secMatch[1] : `Section ${idx + 1}`;
-      const chunkId = `${policyCode}_${sectionRef.replace(/[^a-zA-Z0-9]/g, '_')}`;
-      // Deterministic UUID for Qdrant point id
-      const md5 = crypto.createHash('md5').update(chunkId).digest('hex');
-      const pointId = `${md5.slice(0, 8)}-${md5.slice(8, 12)}-${md5.slice(12, 16)}-${md5.slice(16, 20)}-${md5.slice(20, 32)}`;
+        const secMatch = heading.match(/(Section\s+[\d.]+)/i);
+        const sectionRef = secMatch ? secMatch[1] : `Section ${idx + 1}`;
+        const chunkId = `${policyCode}_${sectionRef.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        const md5 = crypto.createHash('md5').update(chunkId).digest('hex');
+        const pointId = `${md5.slice(0, 8)}-${md5.slice(8, 12)}-${md5.slice(12, 16)}-${md5.slice(16, 20)}-${md5.slice(20, 32)}`;
 
-      chunks.push({
-        chunkId,
-        pointId,
-        policyCode,
-        docTitle,
-        version,
-        department,
-        category,
-        propertyScope,
-        sectionRef: `${sectionRef} — ${heading.replace(/^Section\s+[\d.]+\s*[—-]\s*/i, '')}`,
-        content,
-        active: true,
+        // Allow per-section Department / Category overrides inside multi-part master manuals
+        const inlineMeta = content.match(
+          /\[Department:\s*([^|\]]+?)\s*\|\s*Category:\s*([^|\]]+?)(?:\s*\|[^\]]*)?\]/i
+        );
+        const chunkDept = inlineMeta ? inlineMeta[1].trim() : department;
+        const chunkCat = inlineMeta ? inlineMeta[2].trim().toLowerCase() : category;
+
+        chunks.push({
+          chunkId,
+          pointId,
+          policyCode,
+          docTitle,
+          version,
+          department: chunkDept,
+          category: chunkCat,
+          propertyScope,
+          sectionRef: `${sectionRef} — ${heading.replace(/^Section\s+[\d.]+\s*[—-]\s*/i, '')}`,
+          content,
+          active: true,
+        });
       });
-    });
+    } else {
+      // Plain text or headingless markdown fallback: chunk paragraphs into ~350-word segments
+      const paragraphs = raw
+        .split(/\n\s*\n/)
+        .map((p) => p.trim())
+        .filter((p) => p.length > 20 && !p.startsWith('# '));
+      let buffer = '';
+      let chunkIdx = 1;
+      const flushBuffer = () => {
+        const text = buffer.trim();
+        if (!text) return;
+        const sectionRef = `Section ${chunkIdx}`;
+        const chunkId = `${policyCode}_SEC_${chunkIdx}`;
+        const md5 = crypto.createHash('md5').update(chunkId).digest('hex');
+        const pointId = `${md5.slice(0, 8)}-${md5.slice(8, 12)}-${md5.slice(12, 16)}-${md5.slice(16, 20)}-${md5.slice(20, 32)}`;
+        chunks.push({
+          chunkId,
+          pointId,
+          policyCode,
+          docTitle,
+          version,
+          department,
+          category,
+          propertyScope,
+          sectionRef,
+          content: text,
+          active: true,
+        });
+        chunkIdx++;
+        buffer = '';
+      };
+
+      for (const para of paragraphs) {
+        buffer = buffer ? `${buffer}\n\n${para}` : para;
+        if (buffer.split(/\s+/).length >= 300) {
+          flushBuffer();
+        }
+      }
+      flushBuffer();
+    }
   }
 
   return { policies, chunks };
@@ -244,11 +295,14 @@ export async function indexAllSops(): Promise<{
     }
   })();
 
+  const qdrant = await isQdrantReachable();
+  const useBulkDeterministic = !qdrant || chunks.length > 25;
   const embeddedChunks: SopChunkRecord[] = [];
   for (const chunk of chunks) {
-    const { vector } = await generateEmbedding(
-      `${chunk.docTitle} ${chunk.category} ${chunk.department} ${chunk.sectionRef} ${chunk.content}`
-    );
+    const rawText = `${chunk.docTitle} ${chunk.category} ${chunk.department} ${chunk.sectionRef} ${chunk.content}`;
+    const vector = useBulkDeterministic
+      ? computeDeterministicVector(rawText)
+      : (await generateEmbedding(rawText)).vector;
     embeddedChunks.push({ ...chunk, vector });
   }
 
@@ -260,7 +314,6 @@ export async function indexAllSops(): Promise<{
   );
 
   // Attempt live Qdrant indexing if Qdrant server (:6333) is running
-  const qdrant = await isQdrantReachable();
   if (qdrant && embeddedChunks.length > 0) {
     try {
       const dim = embeddedChunks[0].vector!.length;
@@ -409,10 +462,13 @@ export async function searchSops(params: SearchSopParams): Promise<{
     if (deptMatches.length > 0) candidates = deptMatches;
   }
 
+  const detQueryVec = computeDeterministicVector(params.query);
   const scored = candidates.map((c) => {
+    const activeQueryVec =
+      c.vector && c.vector.length === LOCAL_DIM ? detQueryVec : queryVec;
     const vecSim =
-      c.vector && c.vector.length === queryVec.length
-        ? cosineSimilarity(queryVec, c.vector)
+      c.vector && c.vector.length === activeQueryVec.length
+        ? cosineSimilarity(activeQueryVec, c.vector)
         : 0;
     const hay = `${c.docTitle} ${c.sectionRef} ${c.content}`.toLowerCase();
     const lexicalHits = queryTerms.reduce(
@@ -463,22 +519,34 @@ export function listPolicies() {
     .prepare(`SELECT * FROM policy_chunks ORDER BY id ASC`)
     .all() as Record<string, unknown>[];
 
-  return policies.map((p) => ({
-    id: String(p.id),
-    policyCode: String(p.policy_code),
-    docTitle: String(p.doc_title),
-    version: String(p.version),
-    department: String(p.department),
-    category: String(p.category),
-    propertyScope: String(p.property_scope),
-    active: Boolean(p.active),
-    updatedAt: String(p.updated_at),
-    chunks: chunks
+  return policies.map((p) => {
+    const policyChunks = chunks
       .filter((c) => String(c.policy_id) === String(p.id))
       .map((c) => ({
         id: String(c.id),
         sectionRef: String(c.section_ref),
         content: String(c.content),
-      })),
-  }));
+      }));
+    const wordCount = policyChunks.reduce(
+      (sum, c) => sum + `${c.sectionRef} ${c.content}`.trim().split(/\s+/).filter(Boolean).length,
+      0
+    );
+    const estimatedPages = Math.max(1, Math.ceil(wordCount / 420));
+
+    return {
+      id: String(p.id),
+      policyCode: String(p.policy_code),
+      docTitle: String(p.doc_title),
+      version: String(p.version),
+      department: String(p.department),
+      category: String(p.category),
+      propertyScope: String(p.property_scope),
+      active: Boolean(p.active),
+      updatedAt: String(p.updated_at),
+      wordCount,
+      estimatedPages,
+      chunksCount: policyChunks.length,
+      chunks: policyChunks,
+    };
+  });
 }
